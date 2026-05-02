@@ -822,3 +822,7 @@ struct us_bun_verify_error_t us_socket_verify_error(struct us_socket_t *s) {
     }
     return (struct us_bun_verify_error_t) { .error = 0, .code = NULL, .reason = NULL };
 }
+
+void us_socket_verify_error_out(struct us_socket_t *s, struct us_bun_verify_error_t *out) {
+    *out = us_socket_verify_error(s);
+}

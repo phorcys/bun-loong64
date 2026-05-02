@@ -11,6 +11,11 @@ extern "C" BunString DevServerSourceProvider__getSourceSlice(Bake::DevServerSour
     return Bun::toStringView(provider->source());
 }
 
+extern "C" void DevServerSourceProvider__getSourceSlice_out(Bake::DevServerSourceProvider* provider, BunString* out)
+{
+    *out = DevServerSourceProvider__getSourceSlice(provider);
+}
+
 extern "C" MiCString DevServerSourceProvider__getSourceMapJSON(Bake::DevServerSourceProvider* provider)
 {
     return provider->sourceMapJSON();

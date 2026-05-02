@@ -39,13 +39,13 @@ typedef void (*uws_h3_listen_handler)(us_quic_listen_socket_t*, void*);
 
 /* ───── app ───── */
 
-uws_h3_app_t* uws_h3_create_app(struct us_bun_socket_context_options_t options, unsigned int idle_timeout_s)
+uws_h3_app_t* uws_h3_create_app(const struct us_bun_socket_context_options_t *options, unsigned int idle_timeout_s)
 {
     static int once = (us_quic_global_init(), 1);
     (void)once;
     uWS::SocketContextOptions sco;
-    static_assert(sizeof(sco) == sizeof(options));
-    memcpy(&sco, &options, sizeof(sco));
+    static_assert(sizeof(sco) == sizeof(*options));
+    memcpy(&sco, options, sizeof(sco));
     return (uws_h3_app_t*)H3App::create(sco, idle_timeout_s);
 }
 
@@ -56,10 +56,10 @@ void uws_h3_app_clear_routes(uws_h3_app_t* app) { ((H3App*)app)->clearRoutes(); 
 void* uws_h3_get_native_handle(uws_h3_app_t* app) { return ((H3App*)app)->getNativeHandle(); }
 
 bool uws_h3_app_add_server_name(uws_h3_app_t* app, const char* hostname,
-    struct us_bun_socket_context_options_t options)
+    const struct us_bun_socket_context_options_t *options)
 {
     uWS::SocketContextOptions sco;
-    memcpy(&sco, &options, sizeof(sco));
+    memcpy(&sco, options, sizeof(sco));
     return ((H3App*)app)->addServerNameWithOptions(hostname, sco);
 }
 

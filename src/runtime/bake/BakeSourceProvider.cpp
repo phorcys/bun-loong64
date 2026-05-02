@@ -24,7 +24,12 @@ extern "C" BunString BakeSourceProvider__getSourceSlice(SourceProvider* provider
     return Bun::toStringView(provider->source());
 }
 
-extern "C" JSC::EncodedJSValue BakeLoadInitialServerCode(JSC::JSGlobalObject* global, BunString source, bool separateSSRGraph) {
+extern "C" void BakeSourceProvider__getSourceSlice_out(SourceProvider* provider, BunString* out)
+{
+    *out = BakeSourceProvider__getSourceSlice(provider);
+}
+
+extern "C" JSC::EncodedJSValue BakeLoadInitialServerCode(JSC::JSGlobalObject* global, const BunString* source, bool separateSSRGraph) {
   auto& vm = JSC::getVM(global);
   auto scope = DECLARE_THROW_SCOPE(vm);
 
@@ -32,7 +37,7 @@ extern "C" JSC::EncodedJSValue BakeLoadInitialServerCode(JSC::JSGlobalObject* gl
   JSC::SourceOrigin origin = JSC::SourceOrigin(WTF::URL(string));
   JSC::SourceCode sourceCode = JSC::SourceCode(SourceProvider::create(
     global,
-    source.toWTFString(),
+    source->toWTFString(),
     origin,
     WTF::move(string),
     WTF::TextPosition(),
@@ -58,7 +63,7 @@ extern "C" JSC::JSPromise* BakeLoadModuleByKey(GlobalObject* global, JSC::JSStri
   return JSC::loadAndEvaluateModule(global, key->getString(global), nullptr, nullptr);
 }
 
-extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatch(GlobalObject* global, BunString source) {
+extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatch(GlobalObject* global, const BunString* source) {
   JSC::VM&vm = global->vm();
   auto scope = DECLARE_THROW_SCOPE(vm);
 
@@ -66,7 +71,7 @@ extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatch(GlobalObject* global, BunS
   JSC::SourceOrigin origin = JSC::SourceOrigin(WTF::URL(string));
   JSC::SourceCode sourceCode = JSC::SourceCode(SourceProvider::create(
     global,
-    source.toWTFString(),
+    source->toWTFString(),
     origin,
     WTF::move(string),
     WTF::TextPosition(),
@@ -80,7 +85,7 @@ extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatch(GlobalObject* global, BunS
   return JSC::JSValue::encode(result);
 }
 
-extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatchWithSourceMap(GlobalObject* global, BunString source, const char* sourceMapJSONPtr, size_t sourceMapJSONLength) {
+extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatchWithSourceMap(GlobalObject* global, const BunString* source, const char* sourceMapJSONPtr, size_t sourceMapJSONLength) {
   JSC::VM&vm = global->vm();
   auto scope = DECLARE_THROW_SCOPE(vm);
 
@@ -90,7 +95,7 @@ extern "C" JSC::EncodedJSValue BakeLoadServerHmrPatchWithSourceMap(GlobalObject*
   // Use DevServerSourceProvider with the source map JSON
   auto provider = DevServerSourceProvider::create(
     global,
-    source.toWTFString(),
+    source->toWTFString(),
     sourceMapJSONPtr,
     sourceMapJSONLength,
     origin,
@@ -146,16 +151,16 @@ extern "C" JSC::EncodedJSValue BakeGetOnModuleNamespace(
   return JSC::JSValue::encode(moduleNamespace->get(global, property));
 }
 
-extern "C" JSC::EncodedJSValue BakeRegisterProductionChunk(JSC::JSGlobalObject* global, BunString virtualPathName, BunString source) {
+extern "C" JSC::EncodedJSValue BakeRegisterProductionChunk(JSC::JSGlobalObject* global, const BunString* virtualPathName, const BunString* source) {
   auto& vm = JSC::getVM(global);
   auto scope = DECLARE_THROW_SCOPE(vm);
 
-  String string = virtualPathName.toWTFString();
+  String string = virtualPathName->toWTFString();
   JSC::JSString* key = JSC::jsString(vm, string);
   JSC::SourceOrigin origin = JSC::SourceOrigin(WTF::URL(string));
   JSC::SourceCode sourceCode = JSC::SourceCode(SourceProvider::create(
     global,
-    source.toWTFString(),
+    source->toWTFString(),
     origin,
     WTF::move(string),
     WTF::TextPosition(),

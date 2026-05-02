@@ -376,12 +376,17 @@ unsafe extern "C" {
     // bytes of it), so `&SourceProviderMap` carries no `readonly`/`noalias` —
     // the foreign side owns all state behind the handle and may mutate it. The
     // only param is that handle reference, so this is a `safe fn`.
-    safe fn ZigSourceProvider__getSourceSlice(this: &SourceProviderMap) -> bun_core::String;
+    safe fn ZigSourceProvider__getSourceSlice_out(
+        this: &SourceProviderMap,
+        out: *mut bun_core::String,
+    );
 }
 
 impl SourceProviderMap {
     pub fn get_source_slice(&self) -> bun_core::String {
-        ZigSourceProvider__getSourceSlice(self)
+        let mut out = bun_core::String::default();
+        ZigSourceProvider__getSourceSlice_out(self, &mut out);
+        out
     }
 
     pub fn to_source_content_ptr(&self) -> SourceContentPtr {

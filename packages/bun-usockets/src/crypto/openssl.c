@@ -1200,9 +1200,9 @@ done:
   return ok;
 }
 
-SSL_CTX *us_ssl_ctx_from_options(struct us_bun_socket_context_options_t options,
+SSL_CTX *us_ssl_ctx_from_options(const struct us_bun_socket_context_options_t *options,
                                  enum create_bun_socket_error_t *err) {
-  SSL_CTX *ctx = us_ssl_ctx_build_raw(options, err);
+  SSL_CTX *ctx = us_ssl_ctx_build_raw(*options, err);
   if (!ctx) return NULL;
 
   /* SecureContext is mode-neutral (Node lets one back both tls.connect and
@@ -1216,10 +1216,10 @@ SSL_CTX *us_ssl_ctx_from_options(struct us_bun_socket_context_options_t options,
    * store. Packed into one ex_data slot (no malloc; the void* IS the value)
    * so it dies with the SSL_CTX refcount. The slot was already registered in
    * build_raw for the live counter; this just overwrites its NULL value. */
-  if (options.client_renegotiation_limit || options.client_renegotiation_window) {
+  if (options->client_renegotiation_limit || options->client_renegotiation_window) {
     SSL_CTX_set_ex_data(ctx, us_ssl_ctx_ex_idx(),
-        US_RENEG_PACK(options.client_renegotiation_limit,
-                      options.client_renegotiation_window));
+        US_RENEG_PACK(options->client_renegotiation_limit,
+                      options->client_renegotiation_window));
   }
 
   return ctx;
@@ -1401,6 +1401,10 @@ struct us_bun_verify_error_t us_ssl_socket_verify_error_from_ssl(SSL *ssl) {
   return (struct us_bun_verify_error_t){.error = x509_verify_error, .code = code, .reason = reason};
 }
 
+void us_ssl_socket_verify_error_from_ssl_out(SSL *ssl, struct us_bun_verify_error_t *out) {
+  *out = us_ssl_socket_verify_error_from_ssl(ssl);
+}
+
 struct us_bun_verify_error_t us_internal_ssl_verify_error(struct us_socket_t *s) {
   if (!s->ssl || !s_ssl(s) || us_socket_is_closed(s) || us_internal_ssl_is_shut_down(s)) {
     return (struct us_bun_verify_error_t){.error = 0, .code = NULL, .reason = NULL};
@@ -1444,7 +1448,7 @@ static void ssl_trigger_handshake(struct us_socket_t *s, int success) {
     return;
   }
   struct us_bun_verify_error_t verify_error = us_internal_ssl_verify_error(s);
-  us_dispatch_handshake(s, success, verify_error);
+  us_dispatch_handshake(s, success, &verify_error);
 }
 
 static void ssl_trigger_handshake_econnreset(struct us_socket_t *s) {
@@ -1459,7 +1463,7 @@ static void ssl_trigger_handshake_econnreset(struct us_socket_t *s) {
   struct us_bun_verify_error_t verify_error = {
       .error = -46, .code = "ECONNRESET",
       .reason = "Client network socket disconnected before secure TLS connection was established"};
-  us_dispatch_handshake(s, 0, verify_error);
+  us_dispatch_handshake(s, 0, &verify_error);
 }
 
 /* True once a re-entrant us_socket_close() has run inside a dispatch. Any

@@ -38,8 +38,8 @@ unsafe extern "C" {
     // from the `&self` borrows below; any interior mutation lives behind the
     // FFI boundary in C++-owned storage that Rust has no provenance over
     // (these types are opaque ZST markers).
-    fn BakeSourceProvider__getSourceSlice(this: *const BakeSourceProvider) -> BunString;
-    fn DevServerSourceProvider__getSourceSlice(this: *const DevServerSourceProvider) -> BunString;
+    fn BakeSourceProvider__getSourceSlice_out(this: *const BakeSourceProvider, out: *mut BunString);
+    fn DevServerSourceProvider__getSourceSlice_out(this: *const DevServerSourceProvider, out: *mut BunString);
     fn DevServerSourceProvider__getSourceMapJSON(
         this: *const DevServerSourceProvider,
     ) -> DevServerSourceMapData;
@@ -53,7 +53,9 @@ impl SourceProvider for BakeSourceProvider {
     fn get_source_slice(&self) -> BunString {
         // SAFETY: opaque FFI handle; address-only pass-through, callee does
         // not write Rust-visible memory.
-        unsafe { BakeSourceProvider__getSourceSlice(self) }
+        let mut out = BunString::default();
+        unsafe { BakeSourceProvider__getSourceSlice_out(self, &mut out) };
+        out
     }
 
     fn to_source_content_ptr(&self) -> SourceContentPtr {
@@ -97,7 +99,9 @@ impl SourceProvider for DevServerSourceProvider {
     fn get_source_slice(&self) -> BunString {
         // SAFETY: opaque FFI handle; address-only pass-through, callee does
         // not write Rust-visible memory.
-        unsafe { DevServerSourceProvider__getSourceSlice(self) }
+        let mut out = BunString::default();
+        unsafe { DevServerSourceProvider__getSourceSlice_out(self, &mut out) };
+        out
     }
 
     fn to_source_content_ptr(&self) -> SourceContentPtr {

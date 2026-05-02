@@ -258,7 +258,7 @@ struct us_socket_vtable_t {
     struct us_socket_t *(*on_end)(us_socket_r);
     struct us_socket_t *(*on_connect_error)(us_socket_r, int code);
     struct us_connecting_socket_t *(*on_connecting_error)(struct us_connecting_socket_t *, int code);
-    void (*on_handshake)(us_socket_r, int success, struct us_bun_verify_error_t, void *custom_data);
+    void (*on_handshake)(us_socket_r, int success, const struct us_bun_verify_error_t *, void *custom_data);
 };
 
 /* Mutable list-head + sweep state. Zero-initialise then us_socket_group_init().
@@ -405,6 +405,7 @@ struct us_socket_group_t *us_connecting_socket_group(struct us_connecting_socket
 unsigned char us_connecting_socket_kind(struct us_connecting_socket_t *c) nonnull_fn_decl;
 
 struct us_bun_verify_error_t us_socket_verify_error(struct us_socket_t *s);
+void us_socket_verify_error_out(struct us_socket_t *s, struct us_bun_verify_error_t *out);
 
 /* ── SSL_CTX construction ─────────────────────────────────────────────────
  * The expensive bit (cert/key/CA parse, cipher list, DH params) is decoupled
@@ -456,7 +457,7 @@ enum create_bun_socket_error_t {
  * SSL_CTX never sends CertificateRequest unless options asked it to. Reneg
  * limits attach as SSL_CTX ex_data. */
 struct ssl_ctx_st *us_ssl_ctx_from_options(
-    struct us_bun_socket_context_options_t options,
+    const struct us_bun_socket_context_options_t *options,
     enum create_bun_socket_error_t *err);
 /* SSL_CTX_up_ref / SSL_CTX_free without an OpenSSL include — for C++ callers
  * (uWS App.h) that don't pull in BoringSSL headers. */

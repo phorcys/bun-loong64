@@ -9,8 +9,9 @@ use bun_paths::resolve_path;
 #[unsafe(no_mangle)]
 pub(crate) extern "C" fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
     global_object: &JSGlobalObject,
-    input: BunString,
-) -> BunString {
+    input: &BunString,
+    out: &mut BunString,
+) {
     let str = input.to_utf8_without_ref();
 
     // The cwd is the FileSystem singleton's top_level_dir (resolver_jsc.rs
@@ -29,5 +30,5 @@ pub(crate) extern "C" fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
         &[str.slice()],
     );
 
-    BunString::clone_utf8(out_slice)
+    *out = BunString::clone_utf8(out_slice);
 }

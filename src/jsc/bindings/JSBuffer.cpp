@@ -89,8 +89,8 @@ extern "C" bool Bun__Node__ZeroFillBuffers;
 extern "C" void* highway_memmem(const uint8_t* haystack, size_t haystack_len, const uint8_t* needle, size_t needle_len);
 extern "C" size_t highway_index_of_char(const uint8_t* haystack, size_t haystack_len, uint8_t needle);
 
-// export fn Bun__inspect_singleline(globalThis: *JSGlobalObject, value: JSValue) bun.String
-extern "C" BunString Bun__inspect_singleline(JSC::JSGlobalObject* globalObject, JSC::JSValue value);
+// export fn Bun__inspect_singleline(globalThis: *JSGlobalObject, value: JSValue, out: *bun.String) void
+extern "C" void Bun__inspect_singleline(JSC::JSGlobalObject* globalObject, JSC::JSValue value, BunString* out);
 
 using namespace JSC;
 using namespace WebCore;
@@ -1923,7 +1923,9 @@ static JSC::EncodedJSValue jsBufferPrototypeFunction_inspectBody(JSC::JSGlobalOb
                 result.append(": "_s);
                 auto value = castedThis->get(globalObject, ident);
                 RETURN_IF_EXCEPTION(scope, {});
-                auto inspected = Bun__inspect_singleline(globalObject, value).transferToWTFString();
+                BunString inspectedBunString;
+                Bun__inspect_singleline(globalObject, value, &inspectedBunString);
+                auto inspected = inspectedBunString.transferToWTFString();
                 RETURN_IF_EXCEPTION(scope, {});
                 result.append(inspected);
                 i++;

@@ -257,7 +257,7 @@ JSObject* createError(Zig::JSGlobalObject* globalObject, ErrorCode code, JSC::JS
     return createError(vm, globalObject, code, message);
 }
 
-extern "C" BunString Bun__inspect(JSC::JSGlobalObject* globalObject, JSValue value);
+extern "C" void Bun__inspect(JSC::JSGlobalObject* globalObject, JSValue value, BunString* out);
 
 void JSValueToStringSafe(JSC::JSGlobalObject* globalObject, WTF::StringBuilder& builder, JSValue arg, bool quotesLikeInspect = false)
 {
@@ -338,7 +338,8 @@ void JSValueToStringSafe(JSC::JSGlobalObject* globalObject, WTF::StringBuilder& 
     }
     }
 
-    auto bstring = Bun__inspect(globalObject, arg);
+    BunString bstring;
+    Bun__inspect(globalObject, arg, &bstring);
     auto&& str = bstring.transferToWTFString();
     builder.append(str);
 }
@@ -480,12 +481,12 @@ void determineSpecificType(JSC::VM& vm, JSC::JSGlobalObject* globalObject, WTF::
     JSValueToStringSafe(globalObject, builder, value);
 }
 
-extern "C" BunString Bun__ErrorCode__determineSpecificType(JSC::JSGlobalObject* globalObject, EncodedJSValue value)
+extern "C" void Bun__ErrorCode__determineSpecificType(JSC::JSGlobalObject* globalObject, EncodedJSValue value, BunString* out)
 {
     JSValue jsValue = JSValue::decode(value);
     WTF::StringBuilder builder;
     determineSpecificType(JSC::getVM(globalObject), globalObject, builder, jsValue);
-    return Bun::toStringRef(builder.toString());
+    *out = Bun::toStringRef(builder.toString());
 }
 
 // Node's ERR_INVALID_ARG_VALUE renders the value with `util.inspect` ('w'),

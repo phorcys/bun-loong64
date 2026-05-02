@@ -643,10 +643,10 @@ extern "C" void WebWorker__fireEarlyMessages(Worker* worker, Zig::GlobalObject* 
     worker->fireEarlyMessages(globalObject);
 }
 
-extern "C" void WebWorker__dispatchError(Zig::GlobalObject* globalObject, Worker* worker, BunString* message, JSC::EncodedJSValue errorValue)
+extern "C" void WebWorker__dispatchError(Zig::GlobalObject* globalObject, Worker* worker, const BunString* message, JSC::EncodedJSValue errorValue)
 {
     JSValue error = JSC::JSValue::decode(errorValue);
-    WTF::String messageStr = message->transferToWTFString();
+    WTF::String messageStr = message->toWTFString(BunString::ZeroCopy);
     ErrorEvent::Init init;
     init.message = messageStr.isolatedCopy();
     init.error = error;
