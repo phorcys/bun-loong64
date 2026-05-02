@@ -150,10 +150,11 @@ pub const JSGlobalObject = opaque {
         }
     }
 
-    extern "c" fn Bun__ErrorCode__determineSpecificType(*JSGlobalObject, JSValue) String;
+    extern "c" fn Bun__ErrorCode__determineSpecificType(*JSGlobalObject, JSValue, *String) void;
 
     pub fn determineSpecificType(global: *JSGlobalObject, value: JSValue) JSError!String {
-        const str = Bun__ErrorCode__determineSpecificType(global, value);
+        var str: String = undefined;
+        Bun__ErrorCode__determineSpecificType(global, value, &str);
         errdefer str.deref();
         if (global.hasException()) {
             return error.JSError;
@@ -520,14 +521,14 @@ pub const JSGlobalObject = opaque {
         return bun.jsc.fromJSHostCall(globalObject, @src(), JSC__JSGlobalObject__createAggregateError, .{ globalObject, errors.ptr, errors.len, message });
     }
 
-    extern fn JSC__JSGlobalObject__createAggregateErrorWithArray(*JSGlobalObject, JSValue, bun.String, JSValue) JSValue;
+    extern fn JSC__JSGlobalObject__createAggregateErrorWithArray(*JSGlobalObject, JSValue, *const bun.String, JSValue) JSValue;
     pub fn createAggregateErrorWithArray(
         globalObject: *JSGlobalObject,
         message: bun.String,
         error_array: JSValue,
     ) bun.JSError!JSValue {
         if (bun.Environment.allow_assert) bun.assert(error_array.isArray());
-        return bun.jsc.fromJSHostCall(globalObject, @src(), JSC__JSGlobalObject__createAggregateErrorWithArray, .{ globalObject, error_array, message, .js_undefined });
+        return bun.jsc.fromJSHostCall(globalObject, @src(), JSC__JSGlobalObject__createAggregateErrorWithArray, .{ globalObject, error_array, &message, .js_undefined });
     }
 
     extern fn JSC__JSGlobalObject__generateHeapSnapshot(*JSGlobalObject) JSValue;

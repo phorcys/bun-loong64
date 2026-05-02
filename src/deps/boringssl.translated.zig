@@ -19008,9 +19008,11 @@ pub const SSL = opaque {
         WantRenegotiate,
         HandshakeHintsReady,
     };
-    extern fn us_ssl_socket_verify_error_from_ssl(ssl: *SSL) bun.uws.us_bun_verify_error_t;
+    extern fn us_ssl_socket_verify_error_from_ssl_out(ssl: *SSL, out: *bun.uws.us_bun_verify_error_t) void;
     pub fn getVerifyError(this: *SSL) bun.uws.us_bun_verify_error_t {
-        return us_ssl_socket_verify_error_from_ssl(this);
+        var err: bun.uws.us_bun_verify_error_t = .{};
+        us_ssl_socket_verify_error_from_ssl_out(this, &err);
+        return err;
     }
 
     pub fn shutdown(this: *SSL) void {

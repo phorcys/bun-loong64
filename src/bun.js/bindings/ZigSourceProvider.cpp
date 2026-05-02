@@ -66,7 +66,7 @@ JSC::SourceID sourceIDForSourceURL(const WTF::String& sourceURL)
     return ByteRangeMapping__getSourceID(mappings, Bun::toString(sourceURL));
 }
 
-extern "C" bool BunTest__shouldGenerateCodeCoverage(BunString sourceURL);
+extern "C" bool BunTest__shouldGenerateCodeCoverage(const BunString* sourceURL);
 extern "C" void Bun__addSourceProviderSourceMap(void* bun_vm, SourceProvider* opaque_source_provider, BunString* specifier);
 extern "C" void Bun__removeSourceProviderSourceMap(void* bun_vm, SourceProvider* opaque_source_provider, BunString* specifier);
 
@@ -89,7 +89,7 @@ Ref<SourceProvider> SourceProvider::create(
 
     bool isCodeCoverageEnabled = !!globalObject->vm().controlFlowProfiler();
 
-    bool shouldGenerateCodeCoverage = isCodeCoverageEnabled && !isBuiltin && BunTest__shouldGenerateCodeCoverage(resolvedSource.source_url);
+    bool shouldGenerateCodeCoverage = isCodeCoverageEnabled && !isBuiltin && BunTest__shouldGenerateCodeCoverage(&resolvedSource.source_url);
 
     if (resolvedSource.needsDeref && !isBuiltin) {
         resolvedSource.needsDeref = false;
@@ -394,6 +394,11 @@ int SourceProvider::readCache(JSC::VM& vm, const JSC::SourceCode& sourceCode)
 extern "C" BunString ZigSourceProvider__getSourceSlice(SourceProvider* provider)
 {
     return Bun::toStringView(provider->source());
+}
+
+extern "C" void ZigSourceProvider__getSourceSlice_out(SourceProvider* provider, BunString* out)
+{
+    *out = ZigSourceProvider__getSourceSlice(provider);
 }
 
 }; // namespace Zig

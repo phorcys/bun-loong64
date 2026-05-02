@@ -4034,18 +4034,18 @@ const c = struct {
     extern fn BakeGetDefaultExportFromModule(global: *jsc.JSGlobalObject, module: JSValue) JSValue;
 
     fn BakeLoadServerHmrPatch(global: *jsc.JSGlobalObject, code: bun.String) bun.JSError!JSValue {
-        const f = @extern(*const fn (*jsc.JSGlobalObject, bun.String) callconv(.c) JSValue, .{ .name = "BakeLoadServerHmrPatch" }).*;
-        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, code });
+        const f = @extern(*const fn (*jsc.JSGlobalObject, *const bun.String) callconv(.c) JSValue, .{ .name = "BakeLoadServerHmrPatch" }).*;
+        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, &code });
     }
 
     fn BakeLoadServerHmrPatchWithSourceMap(global: *jsc.JSGlobalObject, code: bun.String, source_map_json_ptr: [*]const u8, source_map_json_len: usize) bun.JSError!JSValue {
-        const f = @extern(*const fn (*jsc.JSGlobalObject, bun.String, [*]const u8, usize) callconv(.c) JSValue, .{ .name = "BakeLoadServerHmrPatchWithSourceMap" }).*;
-        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, code, source_map_json_ptr, source_map_json_len });
+        const f = @extern(*const fn (*jsc.JSGlobalObject, *const bun.String, [*]const u8, usize) callconv(.c) JSValue, .{ .name = "BakeLoadServerHmrPatchWithSourceMap" }).*;
+        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, &code, source_map_json_ptr, source_map_json_len });
     }
 
     fn BakeLoadInitialServerCode(global: *jsc.JSGlobalObject, code: bun.String, separate_ssr_graph: bool) bun.JSError!JSValue {
-        const f = @extern(*const fn (*jsc.JSGlobalObject, bun.String, bool) callconv(.c) JSValue, .{ .name = "BakeLoadInitialServerCode" }).*;
-        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, code, separate_ssr_graph });
+        const f = @extern(*const fn (*jsc.JSGlobalObject, *const bun.String, bool) callconv(.c) JSValue, .{ .name = "BakeLoadInitialServerCode" }).*;
+        return bun.jsc.fromJSHostCall(global, @src(), f, .{ global, &code, separate_ssr_graph });
     }
 };
 
@@ -4558,8 +4558,8 @@ const PromiseEnsureRouteBundledCtx = struct {
     }
 };
 
-export fn Bake__bundleNewRouteJSFunctionImpl(global: *bun.jsc.JSGlobalObject, request_ptr: *anyopaque, url: bun.String) callconv(jsc.conv) bun.jsc.JSValue {
-    return bun.jsc.toJSHostCall(global, @src(), bundleNewRouteJSFunctionImpl, .{ global, request_ptr, url });
+export fn Bake__bundleNewRouteJSFunctionImpl(global: *bun.jsc.JSGlobalObject, request_ptr: *anyopaque, url: *const bun.String) callconv(jsc.conv) bun.jsc.JSValue {
+    return bun.jsc.toJSHostCall(global, @src(), bundleNewRouteJSFunctionImpl, .{ global, request_ptr, url.* });
 }
 
 fn bundleNewRouteJSFunctionImpl(global: *bun.jsc.JSGlobalObject, request_ptr: *anyopaque, url_bunstr: bun.String) bun.JSError!bun.jsc.JSValue {

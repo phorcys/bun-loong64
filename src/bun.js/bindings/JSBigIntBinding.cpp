@@ -80,3 +80,8 @@ extern "C" BunString JSC__JSBigInt__toString(JSBigInt* bigInt, JSGlobalObject* g
 
     return toStringRef(result);
 }
+
+extern "C" void JSC__JSBigInt__toString_out(JSBigInt* bigInt, JSGlobalObject* globalObject, BunString* out)
+{
+    *out = JSC__JSBigInt__toString(bigInt, globalObject);
+}

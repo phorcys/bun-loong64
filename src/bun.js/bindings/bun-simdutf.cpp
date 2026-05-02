@@ -1,3 +1,8 @@
+#if defined(__loongarch__)
+#define SIMDUTF_IMPLEMENTATION_LASX 0
+#define SIMDUTF_IMPLEMENTATION_LSX 0
+#endif
+
 #include "wtf/SIMDUTF.h"
 
 typedef struct SIMDUTFResult {
@@ -89,12 +94,26 @@ simdutf__convert_utf8_to_utf16le_with_errors(const char* buf, size_t len,
     return { res.error, res.count };
 }
 
+void simdutf__convert_utf8_to_utf16le_with_errors_out(const char* buf, size_t len,
+    char16_t* utf16_output, SIMDUTFResult* out)
+{
+    auto res = simdutf::convert_utf8_to_utf16le_with_errors(buf, len, utf16_output);
+    *out = { res.error, res.count };
+}
+
 SIMDUTFResult
 simdutf__convert_utf8_to_utf16be_with_errors(const char* buf, size_t len,
     char16_t* utf16_output)
 {
     auto res = simdutf::convert_utf8_to_utf16be_with_errors(buf, len, utf16_output);
     return { res.error, res.count };
+}
+
+void simdutf__convert_utf8_to_utf16be_with_errors_out(const char* buf, size_t len,
+    char16_t* utf16_output, SIMDUTFResult* out)
+{
+    auto res = simdutf::convert_utf8_to_utf16be_with_errors(buf, len, utf16_output);
+    *out = { res.error, res.count };
 }
 size_t simdutf__convert_valid_utf8_to_utf16le(const char* buf, size_t len,
     char16_t* utf16_buffer)
@@ -144,6 +163,15 @@ SIMDUTFResult simdutf__convert_utf16le_to_utf8_with_errors(const char16_t* buf,
 {
     auto res = simdutf::convert_utf16le_to_utf8_with_errors(buf, len, utf8_buffer);
     return { res.error, res.count };
+}
+
+void simdutf__convert_utf16le_to_utf8_with_errors_out(const char16_t* buf,
+    size_t len,
+    char* utf8_buffer,
+    SIMDUTFResult* out)
+{
+    auto res = simdutf::convert_utf16le_to_utf8_with_errors(buf, len, utf8_buffer);
+    *out = { res.error, res.count };
 }
 
 SIMDUTFResult simdutf__convert_utf16be_to_utf8_with_errors(const char16_t* buf,

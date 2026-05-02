@@ -5,14 +5,16 @@ pub const HeapProfilerConfig = struct {
 };
 
 // C++ function declarations
-extern fn Bun__generateHeapProfile(vm: *jsc.VM) bun.String;
-extern fn Bun__generateHeapSnapshotV8(vm: *jsc.VM) bun.String;
+extern fn Bun__generateHeapProfile_out(vm: *jsc.VM, out: *bun.String) void;
+extern fn Bun__generateHeapSnapshotV8_out(vm: *jsc.VM, out: *bun.String) void;
 
 pub fn generateAndWriteProfile(vm: *jsc.VM, config: HeapProfilerConfig) !void {
-    const profile_string = if (config.text_format)
-        Bun__generateHeapProfile(vm)
-    else
-        Bun__generateHeapSnapshotV8(vm);
+    var profile_string: bun.String = undefined;
+    if (config.text_format) {
+        Bun__generateHeapProfile_out(vm, &profile_string);
+    } else {
+        Bun__generateHeapSnapshotV8_out(vm, &profile_string);
+    }
     defer profile_string.deref();
 
     if (profile_string.isEmpty()) {

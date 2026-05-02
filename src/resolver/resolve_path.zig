@@ -2043,8 +2043,9 @@ pub const PosixToWinNormalizer = struct {
 /// gets cwd off of the global object
 export fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
     globalObject: *bun.jsc.JSGlobalObject,
-    in: bun.String,
-) bun.String {
+    in: *const bun.String,
+    out: *bun.String,
+) void {
     const str = in.toUTF8WithoutRef(bun.default_allocator);
     defer str.deinit();
 
@@ -2065,7 +2066,7 @@ export fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
         .auto,
     );
 
-    return bun.String.cloneUTF8(out_slice);
+    out.* = bun.String.cloneUTF8(out_slice);
 }
 
 pub fn platformToPosixInPlace(comptime T: type, path_buffer: []T) void {

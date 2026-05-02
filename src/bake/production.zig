@@ -782,16 +782,16 @@ extern fn BakeRenderRoutesForProdStatic(
 /// The result of this function is a JSValue that wont be garbage collected, as
 /// it will always have at least one reference by the module loader.
 fn BakeRegisterProductionChunk(global: *jsc.JSGlobalObject, key: bun.String, source_code: bun.String) bun.JSError!JSValue {
-    const f = @extern(*const fn (*jsc.JSGlobalObject, bun.String, bun.String) callconv(.c) JSValue, .{
+    const f = @extern(*const fn (*jsc.JSGlobalObject, *const bun.String, *const bun.String) callconv(.c) JSValue, .{
         .name = "BakeRegisterProductionChunk",
     });
-    const result: JSValue = f(global, key, source_code);
+    const result: JSValue = f(global, &key, &source_code);
     if (result == .zero) return error.JSError;
     bun.assert(result.isString());
     return result;
 }
 
-pub export fn BakeToWindowsPath(input: bun.String) callconv(.c) bun.String {
+pub export fn BakeToWindowsPath(input: *const bun.String, out: *bun.String) callconv(.c) void {
     if (comptime bun.Environment.isPosix) {
         @panic("This code should not be called on POSIX systems.");
     }
@@ -803,10 +803,14 @@ pub export fn BakeToWindowsPath(input: bun.String) callconv(.c) bun.String {
     const output = bun.w_path_buffer_pool.get();
     defer bun.w_path_buffer_pool.put(output);
     const output_slice = bun.strings.toWPathNormalizeAutoExtend(output.*[0..], input_slice);
-    return bun.String.cloneUTF16(output_slice);
+    out.* = bun.String.cloneUTF16(output_slice);
 }
 
-pub export fn BakeProdResolve(global: *jsc.JSGlobalObject, a_str: bun.String, specifier_str: bun.String) callconv(.c) bun.String {
+pub export fn BakeProdResolve(global: *jsc.JSGlobalObject, a_str: *const bun.String, specifier_str: *const bun.String, out: *bun.String) callconv(.c) void {
+    out.* = BakeProdResolveImpl(global, a_str.*, specifier_str.*);
+}
+
+fn BakeProdResolveImpl(global: *jsc.JSGlobalObject, a_str: bun.String, specifier_str: bun.String) bun.String {
     var sfa = std.heap.stackFallback(@sizeOf(bun.PathBuffer) * 2, bun.default_allocator);
     const alloc = sfa.get();
 
@@ -1019,7 +1023,7 @@ pub const PerThread = struct {
 };
 
 /// Given a key, returns the source code to load.
-pub export fn BakeProdLoad(pt: *PerThread, key: bun.String) bun.String {
+pub export fn BakeProdLoad(pt: *PerThread, key: *const bun.String, out: *bun.String) void {
     var sfa = std.heap.stackFallback(4096, bun.default_allocator);
     const allocator = sfa.get();
     const utf8 = key.toUTF8(allocator);
@@ -1027,20 +1031,22 @@ pub export fn BakeProdLoad(pt: *PerThread, key: bun.String) bun.String {
     log("BakeProdLoad: {s}\n", .{utf8.slice()});
     if (pt.module_map.get(utf8.slice())) |value| {
         log("  found in module_map: {s}\n", .{utf8.slice()});
-        return pt.bundled_outputs[value.get()].value.toBunString();
+        out.* = pt.bundled_outputs[value.get()].value.toBunString();
+        return;
     }
-    return bun.String.dead;
+    out.* = bun.String.dead;
 }
 
-pub export fn BakeProdSourceMap(pt: *PerThread, key: bun.String) bun.String {
+pub export fn BakeProdSourceMap(pt: *PerThread, key: *const bun.String, out: *bun.String) void {
     var sfa = std.heap.stackFallback(4096, bun.default_allocator);
     const allocator = sfa.get();
     const utf8 = key.toUTF8(allocator);
     defer utf8.deinit();
     if (pt.source_maps.get(utf8.slice())) |value| {
-        return pt.bundled_outputs[value.get()].value.toBunString();
+        out.* = pt.bundled_outputs[value.get()].value.toBunString();
+        return;
     }
-    return bun.String.dead;
+    out.* = bun.String.dead;
 }
 
 const TypeAndFlags = packed struct(i32) {

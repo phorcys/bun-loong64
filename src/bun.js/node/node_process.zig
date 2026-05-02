@@ -260,7 +260,13 @@ fn setCwd_(globalObject: *jsc.JSGlobalObject, to: *jsc.ZigString) bun.JSError!js
     const fs = vm.transpiler.fs;
 
     var buf: bun.PathBuffer = undefined;
-    const slice = to.sliceZBuf(&buf) catch return globalObject.throw("Invalid path", .{});
+    const slice = if (!to.is16Bit()) brk: {
+        const bytes = to.slice();
+        if (bytes.len >= buf.len) return globalObject.throw("Invalid path", .{});
+        @memcpy(buf[0..bytes.len], bytes);
+        buf[bytes.len] = 0;
+        break :brk buf[0..bytes.len :0];
+    } else to.sliceZBuf(&buf) catch return globalObject.throw("Invalid path", .{});
 
     switch (Syscall.chdir(fs.top_level_dir, slice)) {
         .result => {

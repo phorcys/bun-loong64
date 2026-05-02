@@ -19,7 +19,7 @@ pub const JSFunction = opaque {
 
     extern fn JSFunction__createFromZig(
         global: *JSGlobalObject,
-        fn_name: bun.String,
+        fn_name: *const bun.String,
         implementation: *const JSHostFn,
         arg_count: u32,
         implementation_visibility: ImplementationVisibility,
@@ -34,12 +34,13 @@ pub const JSFunction = opaque {
         function_length: u32,
         options: CreateJSFunctionOptions,
     ) JSValue {
+        const name = switch (@TypeOf(fn_name)) {
+            bun.String => fn_name,
+            else => bun.String.init(fn_name),
+        };
         return JSFunction__createFromZig(
             global,
-            switch (@TypeOf(fn_name)) {
-                bun.String => fn_name,
-                else => bun.String.init(fn_name),
-            },
+            &name,
             switch (@TypeOf(implementation)) {
                 jsc.JSHostFnZig => jsc.toJSHostFn(implementation),
                 jsc.JSHostFn => implementation,

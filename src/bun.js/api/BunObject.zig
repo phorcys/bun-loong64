@@ -489,7 +489,11 @@ pub fn inspect(globalThis: *jsc.JSGlobalObject, callframe: *jsc.CallFrame) bun.J
     return ret;
 }
 
-export fn Bun__inspect(globalThis: *JSGlobalObject, value: JSValue) bun.String {
+export fn Bun__inspect(globalThis: *JSGlobalObject, value: JSValue, out: *bun.String) void {
+    out.* = Bun__inspectImpl(globalThis, value);
+}
+
+fn Bun__inspectImpl(globalThis: *JSGlobalObject, value: JSValue) bun.String {
     // very stable memory address
     var array = std.Io.Writer.Allocating.init(bun.default_allocator);
     defer array.deinit();
@@ -502,7 +506,11 @@ export fn Bun__inspect(globalThis: *JSGlobalObject, value: JSValue) bun.String {
     return bun.String.cloneUTF8(array.written());
 }
 
-export fn Bun__inspect_singleline(globalThis: *JSGlobalObject, value: JSValue) bun.String {
+export fn Bun__inspect_singleline(globalThis: *JSGlobalObject, value: JSValue, out: *bun.String) void {
+    out.* = Bun__inspect_singlelineImpl(globalThis, value);
+}
+
+fn Bun__inspect_singlelineImpl(globalThis: *JSGlobalObject, value: JSValue) bun.String {
     var array = std.Io.Writer.Allocating.init(bun.default_allocator);
     defer array.deinit();
     const writer = &array.writer;

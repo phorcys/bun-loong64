@@ -5753,7 +5753,29 @@ pub fn NewParser_(
         pub fn generateTempRefWithScope(p: *P, default_name: ?string, scope: *Scope) Ref {
             const name = (if (p.willUseRenamer()) default_name else null) orelse brk: {
                 p.temp_ref_count += 1;
-                break :brk bun.handleOom(std.fmt.allocPrint(p.allocator, "__bun_temp_ref_{x}$", .{p.temp_ref_count}));
+                const prefix = "__bun_temp_ref_";
+                var buf: [prefix.len + @sizeOf(usize) * 2 + 1]u8 = undefined;
+                @memcpy(buf[0..prefix.len], prefix);
+
+                var tmp: [@sizeOf(usize) * 2]u8 = undefined;
+                var value = p.temp_ref_count;
+                var digit_count: usize = 0;
+                while (true) {
+                    const digit = value & 0xf;
+                    tmp[digit_count] = if (digit < 10)
+                        @as(u8, '0') + @as(u8, @intCast(digit))
+                    else
+                        @as(u8, 'a') + @as(u8, @intCast(digit - 10));
+                    digit_count += 1;
+                    value >>= 4;
+                    if (value == 0) break;
+                }
+
+                for (0..digit_count) |i| {
+                    buf[prefix.len + i] = tmp[digit_count - 1 - i];
+                }
+                buf[prefix.len + digit_count] = '$';
+                break :brk bun.handleOom(p.allocator.dupe(u8, buf[0 .. prefix.len + digit_count + 1]));
             };
             const ref = bun.handleOom(p.newSymbol(.other, name));
 

@@ -19,7 +19,7 @@ pub const DOMURL = opaque {
         return out;
     }
 
-    extern fn WebCore__DOMURL__fileSystemPath(arg0: *DOMURL, error_code: *c_int) bun.String;
+    extern fn WebCore__DOMURL__fileSystemPath_out(arg0: *DOMURL, error_code: *c_int, out: *bun.String) void;
     pub const ToFileSystemPathError = error{
         NotFileUrl,
         InvalidPath,
@@ -27,7 +27,8 @@ pub const DOMURL = opaque {
     };
     pub fn fileSystemPath(this: *DOMURL) ToFileSystemPathError!bun.String {
         var error_code: c_int = 0;
-        const path = WebCore__DOMURL__fileSystemPath(this, &error_code);
+        var path: bun.String = undefined;
+        WebCore__DOMURL__fileSystemPath_out(this, &error_code, &path);
         switch (error_code) {
             1 => return ToFileSystemPathError.InvalidHost,
             2 => return ToFileSystemPathError.InvalidPath,

@@ -659,12 +659,13 @@ export fn Blob__dupe(this: *Blob) *Blob {
     return new(this.dupeWithContentType(true));
 }
 
-export fn Blob__getFileNameString(this: *Blob) callconv(.c) bun.String {
+export fn Blob__getFileNameString(this: *Blob, out: *bun.String) callconv(.c) void {
     if (this.getFileName()) |filename| {
-        return bun.String.fromBytes(filename);
+        out.* = bun.String.fromBytes(filename);
+        return;
     }
 
-    return bun.String.empty;
+    out.* = bun.String.empty;
 }
 
 comptime {

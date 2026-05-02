@@ -139,7 +139,7 @@ extern fn WebWorker__teardownJSCVM(*jsc.JSGlobalObject) void;
 extern fn WebWorker__dispatchExit(*anyopaque, i32) void;
 extern fn WebWorker__dispatchOnline(cpp_worker: *anyopaque, *jsc.JSGlobalObject) void;
 extern fn WebWorker__fireEarlyMessages(cpp_worker: *anyopaque, *jsc.JSGlobalObject) void;
-extern fn WebWorker__dispatchError(*jsc.JSGlobalObject, *anyopaque, bun.String, JSValue) void;
+extern fn WebWorker__dispatchError(*jsc.JSGlobalObject, *anyopaque, *const bun.String, JSValue) void;
 
 /// Process-global registry of worker threads that have been spawned and
 /// have not yet reached the point in `shutdown()` where they are past all
@@ -806,7 +806,7 @@ fn flushLogs(this: *WebWorker, vm: *jsc.VirtualMachine) void {
         error.JSTerminated => @panic("unhandled exception"),
     };
     defer str.deref();
-    bun.jsc.fromJSHostCallGeneric(vm.global, @src(), WebWorker__dispatchError, .{ vm.global, this.cpp_worker, str, err }) catch |e| {
+    bun.jsc.fromJSHostCallGeneric(vm.global, @src(), WebWorker__dispatchError, .{ vm.global, this.cpp_worker, &str, err }) catch |e| {
         _ = vm.global.reportUncaughtException(vm.global.takeException(e).asException(vm.global.vm()).?);
     };
 }
@@ -847,7 +847,9 @@ fn onUnhandledRejection(vm: *jsc.VirtualMachine, globalObject: *jsc.JSGlobalObje
         bun.outOfMemory();
     };
     jsc.markBinding(@src());
-    WebWorker__dispatchError(globalObject, worker.cpp_worker, bun.String.cloneUTF8(array.written()), error_instance);
+    var message = bun.String.cloneUTF8(array.written());
+    defer message.deref();
+    WebWorker__dispatchError(globalObject, worker.cpp_worker, &message, error_instance);
     _ = worker.setRequestedTerminate();
     worker.shutdown();
 }

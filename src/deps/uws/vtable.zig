@@ -104,8 +104,8 @@ pub fn Trampolines(comptime H: type) type {
             H.onConnectingError(cs, code);
             return cs;
         }
-        pub fn on_handshake(s: *us_socket_t, ok: c_int, err: uws.us_bun_verify_error_t, _: ?*anyopaque) callconv(.c) void {
-            call(s, H.onHandshake, .{ ok != 0, err });
+        pub fn on_handshake(s: *us_socket_t, ok: c_int, err: *const uws.us_bun_verify_error_t, _: ?*anyopaque) callconv(.c) void {
+            call(s, H.onHandshake, .{ ok != 0, err.* });
         }
     };
 }

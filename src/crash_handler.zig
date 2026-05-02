@@ -367,10 +367,20 @@ pub fn crashHandler(
                     break :blk &trace_buf;
                 };
 
-                if (debug_trace) {
+                const dump_state_on_crash = bun.feature_flag.BUN_DUMP_STATE_ON_CRASH.get();
+
+                if (debug_trace or dump_state_on_crash) {
                     has_printed_message = true;
 
                     dumpStackTrace(trace.*, .{});
+
+                    if (dump_state_on_crash) {
+                        writer.writeAll("Raw stack trace addresses:\n") catch std.posix.abort();
+                        const trace_len = @min(trace.index, trace.instruction_addresses.len);
+                        for (trace.instruction_addresses[0..trace_len]) |addr| {
+                            writer.print("0x{x}\n", .{addr}) catch std.posix.abort();
+                        }
+                    }
 
                     trace_str_buf.writer().print("{f}", .{TraceString{
                         .trace = trace,

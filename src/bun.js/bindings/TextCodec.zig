@@ -1,5 +1,5 @@
 extern fn Bun__createTextCodec(encodingName: [*]const u8, encodingNameLen: usize) ?*TextCodec;
-extern fn Bun__decodeWithTextCodec(codec: *TextCodec, data: [*]const u8, length: usize, flush: bool, stopOnError: bool, outSawError: *bool) bun.String;
+extern fn Bun__decodeWithTextCodec_out(codec: *TextCodec, data: [*]const u8, length: usize, flush: bool, stopOnError: bool, outSawError: *bool, out: *bun.String) void;
 extern fn Bun__deleteTextCodec(codec: *TextCodec) void;
 extern fn Bun__stripBOMFromTextCodec(codec: *TextCodec) void;
 extern fn Bun__isEncodingSupported(encodingName: [*]const u8, encodingNameLen: usize) bool;
@@ -19,7 +19,8 @@ pub const TextCodec = opaque {
     pub fn decode(self: *TextCodec, data: []const u8, flush: bool, stopOnError: bool) struct { result: bun.String, sawError: bool } {
         jsc.markBinding(@src());
         var sawError: bool = false;
-        const result = Bun__decodeWithTextCodec(self, data.ptr, data.len, flush, stopOnError, &sawError);
+        var result: bun.String = undefined;
+        Bun__decodeWithTextCodec_out(self, data.ptr, data.len, flush, stopOnError, &sawError, &result);
 
         return .{ .result = result, .sawError = sawError };
     }

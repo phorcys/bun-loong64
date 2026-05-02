@@ -61,6 +61,11 @@ BunString Bun__decodeWithTextCodec(void* codecPtr, const uint8_t* data, size_t l
     return Bun::toStringRef(result);
 }
 
+void Bun__decodeWithTextCodec_out(void* codecPtr, const uint8_t* data, size_t length, bool flush, bool stopOnError, bool* outSawError, BunString* out)
+{
+    *out = Bun__decodeWithTextCodec(codecPtr, data, length, flush, stopOnError, outSawError);
+}
+
 // Delete a codec
 void Bun__deleteTextCodec(void* codecPtr)
 {

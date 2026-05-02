@@ -73,6 +73,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__createAtom(const char* b
     return { BunStringTag::WTFStringImpl, { .wtf = atom.releaseImpl().leakRef() } };
 }
 
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__createAtom_out(const char* bytes, size_t length, BunString* out)
+{
+    *out = BunString__createAtom(bytes, length);
+}
+
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__tryCreateAtom(const char* bytes, size_t length)
 {
     if (simdutf::validate_ascii(bytes, length)) {
@@ -83,6 +88,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__tryCreateAtom(const char
     }
 
     return { BunStringTag::Dead, {} };
+}
+
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__tryCreateAtom_out(const char* bytes, size_t length, BunString* out)
+{
+    *out = BunString__tryCreateAtom(bytes, length);
 }
 
 extern "C" [[ZIG_EXPORT(zero_is_throw)]] JSC::EncodedJSValue BunString__createUTF8ForJS(JSC::JSGlobalObject* globalObject, const char* ptr, size_t length)
@@ -386,6 +396,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromUTF16Unitialized(siz
     return { BunStringTag::WTFStringImpl, { .wtf = impl.leakRef() } };
 }
 
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromUTF16Unitialized_out(size_t length, BunString* out)
+{
+    *out = BunString__fromUTF16Unitialized(length);
+}
+
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromLatin1Unitialized(size_t length)
 {
     ASSERT(length > 0);
@@ -395,6 +410,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromLatin1Unitialized(si
         return { .tag = BunStringTag::Dead };
     }
     return { BunStringTag::WTFStringImpl, { .wtf = impl.leakRef() } };
+}
+
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromLatin1Unitialized_out(size_t length, BunString* out)
+{
+    *out = BunString__fromLatin1Unitialized(length);
 }
 
 extern "C" BunString BunString__fromUTF8(const char* bytes, size_t length)
@@ -419,6 +439,11 @@ extern "C" BunString BunString__fromUTF8(const char* bytes, size_t length)
     return Bun::toString(impl.leakRef());
 }
 
+extern "C" void BunString__fromUTF8_out(const char* bytes, size_t length, BunString* out)
+{
+    *out = BunString__fromUTF8(bytes, length);
+}
+
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromLatin1(const char* bytes, size_t length)
 {
     ASSERT(length > 0);
@@ -430,6 +455,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromLatin1(const char* b
     memcpy(ptr.data(), bytes, length);
 
     return { BunStringTag::WTFStringImpl, { .wtf = impl.leakRef() } };
+}
+
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromLatin1_out(const char* bytes, size_t length, BunString* out)
+{
+    *out = BunString__fromLatin1(bytes, length);
 }
 
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromUTF16ToLatin1(const char16_t* bytes, size_t length)
@@ -448,6 +478,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromUTF16ToLatin1(const 
     return { BunStringTag::WTFStringImpl, { .wtf = impl.leakRef() } };
 }
 
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromUTF16ToLatin1_out(const char16_t* bytes, size_t length, BunString* out)
+{
+    *out = BunString__fromUTF16ToLatin1(bytes, length);
+}
+
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromUTF16(const char16_t* bytes, size_t length)
 {
     ASSERT(length > 0);
@@ -460,6 +495,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromUTF16(const char16_t
     return { BunStringTag::WTFStringImpl, { .wtf = impl.leakRef() } };
 }
 
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromUTF16_out(const char16_t* bytes, size_t length, BunString* out)
+{
+    *out = BunString__fromUTF16(bytes, length);
+}
+
 extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromBytes(const char* bytes, size_t length)
 {
     ASSERT(length > 0);
@@ -468,6 +508,11 @@ extern "C" [[ZIG_EXPORT(nothrow)]] BunString BunString__fromBytes(const char* by
     }
 
     return BunString__fromUTF8(bytes, length);
+}
+
+extern "C" [[ZIG_EXPORT(nothrow)]] void BunString__fromBytes_out(const char* bytes, size_t length, BunString* out)
+{
+    *out = BunString__fromBytes(bytes, length);
 }
 
 extern "C" BunString BunString__createStaticExternal(const char* bytes, size_t length, bool isLatin1)
@@ -479,6 +524,11 @@ extern "C" BunString BunString__createStaticExternal(const char* bytes, size_t l
     return { BunStringTag::WTFStringImpl, { .wtf = &impl.leakRef() } };
 }
 
+extern "C" void BunString__createStaticExternal_out(const char* bytes, size_t length, bool isLatin1, BunString* out)
+{
+    *out = BunString__createStaticExternal(bytes, length, isLatin1);
+}
+
 extern "C" BunString BunString__createExternal(const char* bytes, size_t length, bool isLatin1, void* ctx, void (*callback)(void* arg0, void* arg1, size_t arg2))
 {
     Ref<WTF::ExternalStringImpl> impl = isLatin1 ? WTF::ExternalStringImpl::create({ reinterpret_cast<const Latin1Character*>(bytes), length }, ctx, callback) :
@@ -486,6 +536,11 @@ extern "C" BunString BunString__createExternal(const char* bytes, size_t length,
                                                  WTF::ExternalStringImpl::create({ reinterpret_cast<const char16_t*>(bytes), length }, ctx, callback);
 
     return { BunStringTag::WTFStringImpl, { .wtf = &impl.leakRef() } };
+}
+
+extern "C" void BunString__createExternal_out(const char* bytes, size_t length, bool isLatin1, void* ctx, void (*callback)(void* arg0, void* arg1, size_t arg2), BunString* out)
+{
+    *out = BunString__createExternal(bytes, length, isLatin1, ctx, callback);
 }
 
 extern "C" [[ZIG_EXPORT(zero_is_throw)]] JSC::EncodedJSValue BunString__toJSON(
@@ -555,6 +610,11 @@ extern "C" BunString URL__getFileURLString(BunString* filePath)
     return Bun::toStringRef(WTF::URL::fileURLWithFileSystemPath(filePath->toWTFString()).stringWithoutFragmentIdentifier());
 }
 
+extern "C" void URL__getFileURLString_out(BunString* filePath, BunString* out)
+{
+    *out = URL__getFileURLString(filePath);
+}
+
 extern "C" size_t URL__originLength(const char* latin1_slice, size_t len)
 {
     WTF::String string = WTF::StringView(latin1_slice, len, true).toString();
@@ -616,6 +676,11 @@ extern "C" BunString URL__getHrefFromJS(EncodedJSValue encodedValue, JSC::JSGlob
     return Bun::toStringRef(url.string());
 }
 
+extern "C" void URL__getHrefFromJS_out(EncodedJSValue encodedValue, JSC::JSGlobalObject* globalObject, BunString* out)
+{
+    *out = URL__getHrefFromJS(encodedValue, globalObject);
+}
+
 extern "C" BunString URL__getHref(BunString* input)
 {
     auto&& str = input->toWTFString();
@@ -626,6 +691,11 @@ extern "C" BunString URL__getHref(BunString* input)
     return Bun::toStringRef(url.string());
 }
 
+extern "C" void URL__getHref_out(BunString* input, BunString* out)
+{
+    *out = URL__getHref(input);
+}
+
 extern "C" BunString URL__pathFromFileURL(BunString* input)
 {
     auto&& str = input->toWTFString();
@@ -634,6 +704,11 @@ extern "C" BunString URL__pathFromFileURL(BunString* input)
         return { BunStringTag::Dead };
 
     return Bun::toStringRef(url.fileSystemPath());
+}
+
+extern "C" void URL__pathFromFileURL_out(BunString* input, BunString* out)
+{
+    *out = URL__pathFromFileURL(input);
 }
 
 extern "C" BunString URL__getHrefJoin(BunString* baseStr, BunString* relativeStr)
@@ -647,6 +722,11 @@ extern "C" BunString URL__getHrefJoin(BunString* baseStr, BunString* relativeStr
     return Bun::toStringRef(url.string());
 }
 
+extern "C" void URL__getHrefJoin_out(BunString* baseStr, BunString* relativeStr, BunString* out)
+{
+    *out = URL__getHrefJoin(baseStr, relativeStr);
+}
+
 extern "C" BunString URL__hash(WTF::URL* url)
 {
     const auto& fragment = url->fragmentIdentifier().isEmpty()
@@ -655,12 +735,22 @@ extern "C" BunString URL__hash(WTF::URL* url)
     return Bun::toStringRef(fragment);
 }
 
+extern "C" void URL__hash_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__hash(url);
+}
+
 extern "C" BunString URL__fragmentIdentifier(WTF::URL* url)
 {
     const auto& fragment = url->fragmentIdentifier().isEmpty()
         ? emptyString()
         : url->fragmentIdentifier().toStringWithoutCopying();
     return Bun::toStringRef(fragment);
+}
+
+extern "C" void URL__fragmentIdentifier_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__fragmentIdentifier(url);
 }
 
 extern "C" WTF::URL* URL__fromString(BunString* input)
@@ -678,6 +768,11 @@ extern "C" BunString URL__protocol(WTF::URL* url)
     return Bun::toStringRef(url->protocol().toStringWithoutCopying());
 }
 
+extern "C" void URL__protocol_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__protocol(url);
+}
+
 extern "C" void URL__deinit(WTF::URL* url)
 {
     delete url;
@@ -688,9 +783,19 @@ extern "C" BunString URL__href(WTF::URL* url)
     return Bun::toStringRef(url->string());
 }
 
+extern "C" void URL__href_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__href(url);
+}
+
 extern "C" BunString URL__username(WTF::URL* url)
 {
     return Bun::toStringRef(url->user());
+}
+
+extern "C" void URL__username_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__username(url);
 }
 
 extern "C" BunString URL__password(WTF::URL* url)
@@ -698,9 +803,19 @@ extern "C" BunString URL__password(WTF::URL* url)
     return Bun::toStringRef(url->password());
 }
 
+extern "C" void URL__password_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__password(url);
+}
+
 extern "C" BunString URL__search(WTF::URL* url)
 {
     return Bun::toStringRef(url->query().toStringWithoutCopying());
+}
+
+extern "C" void URL__search_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__search(url);
 }
 
 /// Returns the host WITHOUT the port.
@@ -715,6 +830,11 @@ extern "C" BunString URL__host(WTF::URL* url)
     return Bun::toStringRef(url->host().toStringWithoutCopying());
 }
 
+extern "C" void URL__host_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__host(url);
+}
+
 /// Returns the host WITH the port.
 ///
 /// Note that this does NOT match JS behavior which returns the host without the port.
@@ -725,6 +845,11 @@ extern "C" BunString URL__host(WTF::URL* url)
 extern "C" BunString URL__hostname(WTF::URL* url)
 {
     return Bun::toStringRef(url->hostAndPort());
+}
+
+extern "C" void URL__hostname_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__hostname(url);
 }
 
 extern "C" uint32_t URL__port(WTF::URL* url)
@@ -741,6 +866,11 @@ extern "C" uint32_t URL__port(WTF::URL* url)
 extern "C" BunString URL__pathname(WTF::URL* url)
 {
     return Bun::toStringRef(url->path().toStringWithoutCopying());
+}
+
+extern "C" void URL__pathname_out(WTF::URL* url, BunString* out)
+{
+    *out = URL__pathname(url);
 }
 
 size_t BunString::utf8ByteLength(const WTF::String& str)
@@ -857,6 +987,14 @@ extern "C" BunString BunString__createExternalGloballyAllocatedLatin1(
     return { BunStringTag::WTFStringImpl, { .wtf = &impl.leakRef() } };
 }
 
+extern "C" void BunString__createExternalGloballyAllocatedLatin1_out(
+    const Latin1Character* bytes,
+    size_t length,
+    BunString* out)
+{
+    *out = BunString__createExternalGloballyAllocatedLatin1(bytes, length);
+}
+
 extern "C" BunString BunString__createExternalGloballyAllocatedUTF16(
     const char16_t* bytes,
     size_t length)
@@ -866,6 +1004,14 @@ extern "C" BunString BunString__createExternalGloballyAllocatedUTF16(
         mi_free(ptr);
     });
     return { BunStringTag::WTFStringImpl, { .wtf = &impl.leakRef() } };
+}
+
+extern "C" void BunString__createExternalGloballyAllocatedUTF16_out(
+    const char16_t* bytes,
+    size_t length,
+    BunString* out)
+{
+    *out = BunString__createExternalGloballyAllocatedUTF16(bytes, length);
 }
 
 extern "C" [[ZIG_EXPORT(nothrow)]] bool WTFStringImpl__isThreadSafe(

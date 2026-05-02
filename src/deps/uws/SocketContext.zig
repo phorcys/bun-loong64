@@ -35,7 +35,7 @@ pub const BunSocketContextOptions = extern struct {
     /// `us_internal_ssl_attach`, so a server reusing this ctx never sends
     /// CertificateRequest unless these options asked it to.
     pub fn createSSLContext(options: BunSocketContextOptions, err: *uws.create_bun_socket_error_t) ?*BoringSSL.SSL_CTX {
-        return c.us_ssl_ctx_from_options(options, err);
+        return c.us_ssl_ctx_from_options(&options, err);
     }
 
     /// SHA-256 over every field this struct carries, dereferencing string
@@ -128,7 +128,7 @@ pub const BunSocketContextOptions = extern struct {
 };
 
 pub const c = struct {
-    pub extern fn us_ssl_ctx_from_options(BunSocketContextOptions, *uws.create_bun_socket_error_t) ?*BoringSSL.SSL_CTX;
+    pub extern fn us_ssl_ctx_from_options(*const BunSocketContextOptions, *uws.create_bun_socket_error_t) ?*BoringSSL.SSL_CTX;
     pub extern fn us_ssl_ctx_live_count() c_long;
 };
 

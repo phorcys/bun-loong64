@@ -41,7 +41,7 @@ pub const SocketGroup = extern struct {
         on_end: ?*const fn (*us_socket_t) callconv(.c) ?*us_socket_t = null,
         on_connect_error: ?*const fn (*us_socket_t, c_int) callconv(.c) ?*us_socket_t = null,
         on_connecting_error: ?*const fn (*ConnectingSocket, c_int) callconv(.c) ?*ConnectingSocket = null,
-        on_handshake: ?*const fn (*us_socket_t, c_int, uws.us_bun_verify_error_t, ?*anyopaque) callconv(.c) void = null,
+        on_handshake: ?*const fn (*us_socket_t, c_int, *const uws.us_bun_verify_error_t, ?*anyopaque) callconv(.c) void = null,
     };
 
     comptime {

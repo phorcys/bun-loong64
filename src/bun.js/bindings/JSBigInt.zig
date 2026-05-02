@@ -27,9 +27,11 @@ pub const JSBigInt = opaque {
         return JSC__JSBigInt__toInt64(this);
     }
 
-    extern fn JSC__JSBigInt__toString(*JSBigInt, *JSGlobalObject) bun.String;
+    extern fn JSC__JSBigInt__toString_out(*JSBigInt, *JSGlobalObject, *bun.String) void;
     pub fn toString(this: *JSBigInt, global: *JSGlobalObject) JSError!bun.String {
-        return bun.jsc.fromJSHostCallGeneric(global, @src(), JSC__JSBigInt__toString, .{ this, global });
+        var out: bun.String = undefined;
+        try bun.jsc.fromJSHostCallGeneric(global, @src(), JSC__JSBigInt__toString_out, .{ this, global, &out });
+        return out;
     }
 };
 

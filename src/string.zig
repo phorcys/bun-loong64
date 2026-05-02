@@ -130,7 +130,8 @@ pub const String = extern struct {
 
     fn createUninitializedLatin1(len: usize) struct { String, []u8 } {
         bun.assert(len > 0);
-        const string = bun.cpp.BunString__fromLatin1Unitialized(len);
+        var string: String = undefined;
+        BunString__fromLatin1Unitialized_out(len, &string);
         if (string.tag == .Dead) {
             return .{ string, &.{} };
         }
@@ -144,7 +145,8 @@ pub const String = extern struct {
 
     fn createUninitializedUTF16(len: usize) struct { String, []u16 } {
         bun.assert(len > 0);
-        const string = bun.cpp.BunString__fromUTF16Unitialized(len);
+        var string: String = undefined;
+        BunString__fromUTF16Unitialized_out(len, &string);
         if (string.tag == .Dead) {
             return .{ string, &.{} };
         }
@@ -189,7 +191,9 @@ pub const String = extern struct {
     pub fn cloneLatin1(bytes: []const u8) String {
         jsc.markBinding(@src());
         if (bytes.len == 0) return String.empty;
-        return validateRefCount(bun.cpp.BunString__fromLatin1(bytes.ptr, bytes.len));
+        var out: String = undefined;
+        BunString__fromLatin1_out(bytes.ptr, bytes.len, &out);
+        return validateRefCount(out);
     }
 
     pub inline fn validateRefCount(this: String) String {
@@ -211,9 +215,13 @@ pub const String = extern struct {
     pub fn cloneUTF16(bytes: []const u16) String {
         if (bytes.len == 0) return String.empty;
         if (bun.strings.firstNonASCII16(bytes) == null) {
-            return validateRefCount(bun.cpp.BunString__fromUTF16ToLatin1(bytes.ptr, bytes.len));
+            var out: String = undefined;
+            BunString__fromUTF16ToLatin1_out(bytes.ptr, bytes.len, &out);
+            return validateRefCount(out);
         }
-        return validateRefCount(bun.cpp.BunString__fromUTF16(bytes.ptr, bytes.len));
+        var out: String = undefined;
+        BunString__fromUTF16_out(bytes.ptr, bytes.len, &out);
+        return validateRefCount(out);
     }
 
     pub fn createFormat(comptime fmt: [:0]const u8, args: anytype) OOM!String {
@@ -267,12 +275,15 @@ pub const String = extern struct {
 
     /// Must be given ascii input
     pub fn createAtomASCII(bytes: []const u8) String {
-        return bun.cpp.BunString__createAtom(bytes.ptr, bytes.len);
+        var out: String = undefined;
+        BunString__createAtom_out(bytes.ptr, bytes.len, &out);
+        return out;
     }
 
     /// Will return null if the input is non-ascii or too long
     pub fn tryCreateAtom(bytes: []const u8) ?String {
-        const atom = bun.cpp.BunString__tryCreateAtom(bytes.ptr, bytes.len);
+        var atom: String = undefined;
+        BunString__tryCreateAtom_out(bytes.ptr, bytes.len, &atom);
         return if (atom.tag == .Dead) null else atom;
     }
 
@@ -381,18 +392,36 @@ pub const String = extern struct {
         return JSC__createRangeError(globalObject, this);
     }
 
-    extern fn BunString__createExternal(
+    extern fn BunString__createAtom_out(
+        bytes: [*]const u8,
+        len: usize,
+        out: *String,
+    ) void;
+    extern fn BunString__tryCreateAtom_out(
+        bytes: [*]const u8,
+        len: usize,
+        out: *String,
+    ) void;
+    extern fn BunString__fromLatin1Unitialized_out(len: usize, out: *String) void;
+    extern fn BunString__fromUTF16Unitialized_out(len: usize, out: *String) void;
+    extern fn BunString__fromLatin1_out(bytes: [*]const u8, len: usize, out: *String) void;
+    extern fn BunString__fromUTF16ToLatin1_out(bytes: [*]const u16, len: usize, out: *String) void;
+    extern fn BunString__fromUTF16_out(bytes: [*]const u16, len: usize, out: *String) void;
+
+    extern fn BunString__createExternal_out(
         bytes: [*]const u8,
         len: usize,
         isLatin1: bool,
         ptr: ?*anyopaque,
         callback: ?*const fn (*anyopaque, *anyopaque, u32) callconv(.c) void,
-    ) String;
-    extern fn BunString__createStaticExternal(
+        out: *String,
+    ) void;
+    extern fn BunString__createStaticExternal_out(
         bytes: [*]const u8,
         len: usize,
         isLatin1: bool,
-    ) String;
+        out: *String,
+    ) void;
 
     /// ctx is the pointer passed into `createExternal`
     /// buffer is the pointer to the buffer, either [*]u8 or [*]u16
@@ -432,7 +461,9 @@ pub const String = extern struct {
             }
             return dead;
         }
-        return validateRefCount(BunString__createExternal(@ptrCast(bytes.ptr), bytes.len, isLatin1, ctx, @ptrCast(callback)));
+        var out: String = undefined;
+        BunString__createExternal_out(@ptrCast(bytes.ptr), bytes.len, isLatin1, ctx, @ptrCast(callback), &out);
+        return validateRefCount(out);
     }
 
     /// This should rarely be used. The WTF::StringImpl* will never be freed.
@@ -442,18 +473,22 @@ pub const String = extern struct {
     pub fn createStaticExternal(bytes: []const u8, isLatin1: bool) String {
         jsc.markBinding(@src());
         bun.assert(bytes.len > 0);
-        return BunString__createStaticExternal(bytes.ptr, bytes.len, isLatin1);
+        var out: String = undefined;
+        BunString__createStaticExternal_out(bytes.ptr, bytes.len, isLatin1, &out);
+        return out;
     }
 
-    extern fn BunString__createExternalGloballyAllocatedLatin1(
+    extern fn BunString__createExternalGloballyAllocatedLatin1_out(
         bytes: [*]u8,
         len: usize,
-    ) String;
+        out: *String,
+    ) void;
 
-    extern fn BunString__createExternalGloballyAllocatedUTF16(
+    extern fn BunString__createExternalGloballyAllocatedUTF16_out(
         bytes: [*]u16,
         len: usize,
-    ) String;
+        out: *String,
+    ) void;
 
     /// Max WTFStringImpl length.
     /// **Not** in bytes. In characters.
@@ -471,10 +506,12 @@ pub const String = extern struct {
             return dead;
         }
 
-        return switch (comptime kind) {
-            .latin1 => validateRefCount(BunString__createExternalGloballyAllocatedLatin1(bytes.ptr, bytes.len)),
-            .utf16 => validateRefCount(BunString__createExternalGloballyAllocatedUTF16(bytes.ptr, bytes.len)),
-        };
+        var out: String = undefined;
+        switch (comptime kind) {
+            .latin1 => BunString__createExternalGloballyAllocatedLatin1_out(bytes.ptr, bytes.len, &out),
+            .utf16 => BunString__createExternalGloballyAllocatedUTF16_out(bytes.ptr, bytes.len, &out),
+        }
+        return validateRefCount(out);
     }
 
     /// Create a `String` from a UTF-8 slice.
