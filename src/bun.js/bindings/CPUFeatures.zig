@@ -28,6 +28,11 @@ pub const Flags = switch (@import("builtin").cpu.arch) {
 
         padding: u1 = 0,
     },
+    .loongarch64 => packed struct(u8) {
+        none: bool,
+
+        padding: u7 = 0,
+    },
     else => unreachable,
 };
 
@@ -52,6 +57,7 @@ pub fn isEmpty(features: CPUFeatures) bool {
 }
 
 pub fn hasAnyAVX(features: CPUFeatures) bool {
+    if (!bun.Environment.isX64) return false;
     return features.flags.avx or features.flags.avx2 or features.flags.avx512;
 }
 

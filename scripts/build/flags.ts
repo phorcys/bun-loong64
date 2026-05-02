@@ -857,6 +857,11 @@ export const linkerFlags: Flag[] = [
     desc: "Keep eh_frame header (non-LTO; needed for backtraces)",
   },
   {
+    flag: c => `--target=${c.crossTarget!}`,
+    when: c => c.linux && c.abi === "gnu" && c.crossTarget !== undefined,
+    desc: "GNU Linux cross link target",
+  },
+  {
     flag: c => `--ld-path=${c.ld}`,
     when: c => c.linux,
     desc: "Use lld instead of system ld",

@@ -139,8 +139,10 @@
 #include "JSTransformStreamDefaultController.h"
 #include "JSURLPattern.h"
 #include "JSURLSearchParams.h"
+#if ENABLE(WEBASSEMBLY)
 #include "JSWasmStreamingCompiler.h"
 #include <JavaScriptCore/WebAssemblyCompileOptions.h>
+#endif
 #include "JSWebSocket.h"
 #include "JSWorker.h"
 #include "JSWritableStream.h"
@@ -294,10 +296,26 @@ extern "C" void JSCInitialize(const char* envp[], size_t envc, void (*onCrash)(c
         // Use JSC::initialize with a callback to set Options during initialization.
         // The callback runs BEFORE IPInt::initialize() so we can configure WASM options early.
         JSC::initialize([&] {
+#if ENABLE(WEBASSEMBLY)
             JSC::Options::useWasm() = true;
+#else
+            JSC::Options::useWasm() = false;
+#endif
+#if ENABLE(JIT)
             JSC::Options::useJIT() = true;
+#else
+            JSC::Options::useJIT() = false;
+#endif
+#if ENABLE(WEBASSEMBLY_BBQJIT)
             JSC::Options::useBBQJIT() = true;
+#else
+            JSC::Options::useBBQJIT() = false;
+#endif
+#if ENABLE(JIT)
             JSC::Options::useConcurrentJIT() = true;
+#else
+            JSC::Options::useConcurrentJIT() = false;
+#endif
             // JSC::Options::useSigillCrashAnalyzer() = true;
             JSC::Options::useSourceProviderCache() = true;
             // JSC::Options::useUnlinkedCodeBlockJettisoning() = false;
@@ -911,8 +929,13 @@ const JSC::GlobalObjectMethodTable& GlobalObject::globalObjectMethodTable()
         &scriptExecutionStatus,
         &unsafeEvalNoop, // reportViolationForUnsafeEval
         nullptr, // defaultLanguage
+#if ENABLE(WEBASSEMBLY)
         &compileStreaming,
         &instantiateStreaming,
+#else
+        nullptr, // compileStreaming
+        nullptr, // instantiateStreaming
+#endif
         &Zig::deriveShadowRealmGlobalObject,
         &codeForEval, // codeForEval
         &canCompileStrings, // canCompileStrings
@@ -939,8 +962,13 @@ const JSC::GlobalObjectMethodTable& EvalGlobalObject::globalObjectMethodTable()
         &scriptExecutionStatus,
         &unsafeEvalNoop, // reportViolationForUnsafeEval
         nullptr, // defaultLanguage
+#if ENABLE(WEBASSEMBLY)
         &compileStreaming,
         &instantiateStreaming,
+#else
+        nullptr, // compileStreaming
+        nullptr, // instantiateStreaming
+#endif
         &Zig::deriveShadowRealmGlobalObject,
         &codeForEval, // codeForEval
         &canCompileStrings, // canCompileStrings
@@ -2122,10 +2150,12 @@ void GlobalObject::finishCreation(VM& vm)
             init.set(JSC::JSFunction::create(init.vm, init.owner, utilInspectStylizeWithNoColorCodeGenerator(init.vm), init.owner));
         });
 
+#if ENABLE(WEBASSEMBLY)
     m_wasmStreamingConsumeStreamFunction.initLater(
         [](const Initializer<JSFunction>& init) {
             init.set(JSC::JSFunction::create(init.vm, init.owner, wasmStreamingConsumeStreamCodeGenerator(init.vm), init.owner));
         });
+#endif
 
     m_nativeMicrotaskTrampoline.initLater(
         [](const Initializer<JSFunction>& init) {
@@ -3587,6 +3617,7 @@ JSC::JSValue EvalGlobalObject::moduleLoaderEvaluate(JSGlobalObject* lexicalGloba
     return result;
 }
 
+#if ENABLE(WEBASSEMBLY)
 extern "C" JSC::EncodedJSValue Zig__GlobalObject__getBodyStreamOrBytesForWasmStreaming(JSGlobalObject*, EncodedJSValue response, JSC::Wasm::StreamingCompiler* compiler);
 
 extern "C" void JSC__Wasm__StreamingCompiler__addBytes(JSC::Wasm::StreamingCompiler* compiler, const uint8_t* spanPtr, size_t spanSize)
@@ -3642,6 +3673,7 @@ JSC::JSPromise* GlobalObject::instantiateStreaming(JSGlobalObject* globalObject,
 {
     return handleResponseOnStreamingAction(globalObject, source, JSC::Wasm::CompilerMode::FullCompile, importObject, WTF::move(compileOptions));
 }
+#endif
 
 GlobalObject::PromiseFunctions GlobalObject::promiseHandlerID(Zig::FFIFunction handler)
 {

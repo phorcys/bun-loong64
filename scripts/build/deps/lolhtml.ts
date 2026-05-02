@@ -51,6 +51,10 @@ export const lolhtml: Dependency = {
       spec.rustTarget = cfg.arm64 ? "aarch64-linux-android" : "x86_64-linux-android";
     }
 
+    if (cfg.linux && cfg.abi === "gnu" && cfg.loongarch64) {
+      spec.rustTarget = "loongarch64-unknown-linux-gnu";
+    }
+
     // FreeBSD: x86_64 is Tier 2 (prebuilt std). aarch64 is Tier 3 — no
     // prebuilt, so build std from source via -Zbuild-std (requires nightly
     // + rust-src) whether cross-compiling or native. rustTarget is only

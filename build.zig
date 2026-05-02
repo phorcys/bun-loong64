@@ -737,6 +737,10 @@ fn getTranslateC(b: *Build, initial_target: std.Build.ResolvedTarget, optimize: 
 
     translate_c.addIncludePath(b.path("vendor/zstd/lib"));
 
+    if (target.result.os.tag == .linux and target.result.cpu.arch == .loongarch64) {
+        translate_c.addSystemIncludePath(.{ .cwd_relative = "/usr/loongarch64-linux-gnu/include" });
+    }
+
     if (target.result.abi.isAndroid()) {
         const sysroot = android_ndk_sysroot orelse
             std.debug.panic("translate-c for Android requires -Dandroid_ndk_sysroot", .{});

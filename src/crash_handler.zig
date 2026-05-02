@@ -1137,6 +1137,7 @@ const Platform = enum(u8) {
     linux_x86_64 = 'l',
     linux_x86_64_baseline = 'B',
     linux_aarch64 = 'L',
+    linux_loongarch64 = 'o',
 
     mac_x86_64_baseline = 'b',
     mac_x86_64 = 'm',

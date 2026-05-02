@@ -136,15 +136,25 @@ double BUN_WRAP_GLIBC_SYMBOL(log2)(double);
 int BUN_WRAP_GLIBC_SYMBOL(fcntl64)(int, int, ...);
 ssize_t BUN_WRAP_GLIBC_SYMBOL(getrandom)(void*, size_t, unsigned int);
 
-float __wrap_expf(float x) { return expf(x); }
-float __wrap_powf(float x, float y) { return powf(x, y); }
-float __wrap_logf(float x) { return logf(x); }
-float __wrap_log2f(float x) { return log2f(x); }
-double __wrap_exp(double x) { return exp(x); }
-double __wrap_exp2(double x) { return exp2(x); }
-double __wrap_pow(double x, double y) { return pow(x, y); }
-double __wrap_log(double x) { return log(x); }
-double __wrap_log2(double x) { return log2(x); }
+float __real_expf(float);
+float __real_powf(float, float);
+float __real_logf(float);
+float __real_log2f(float);
+double __real_exp(double);
+double __real_exp2(double);
+double __real_pow(double, double);
+double __real_log(double);
+double __real_log2(double);
+
+float __wrap_expf(float x) { return __real_expf(x); }
+float __wrap_powf(float x, float y) { return __real_powf(x, y); }
+float __wrap_logf(float x) { return __real_logf(x); }
+float __wrap_log2f(float x) { return __real_log2f(x); }
+double __wrap_exp(double x) { return __real_exp(x); }
+double __wrap_exp2(double x) { return __real_exp2(x); }
+double __wrap_pow(double x, double y) { return __real_pow(x, y); }
+double __wrap_log(double x) { return __real_log(x); }
+double __wrap_log2(double x) { return __real_log2(x); }
 
 // glibc 2.24 added quick_exit@GLIBC_2.24 (the version that correctly skips
 // thread_local dtors per C11/C++11; the older @2.10 version ran them — see

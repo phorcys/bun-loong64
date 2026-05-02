@@ -15,14 +15,22 @@ pub fn getCPUTime(this: *ResourceUsage, globalObject: *JSGlobalObject) bun.JSErr
     var cpu = jsc.JSValue.createEmptyObjectWithNullPrototype(globalObject);
     const rusage = this.rusage;
 
-    const usrTime = try JSValue.fromTimevalNoTruncate(globalObject, rusage.utime.usec, rusage.utime.sec);
-    const sysTime = try JSValue.fromTimevalNoTruncate(globalObject, rusage.stime.usec, rusage.stime.sec);
+    const usrTime = try JSValue.fromTimevalNoTruncate(globalObject, timevalUsec(rusage.utime), timevalSec(rusage.utime));
+    const sysTime = try JSValue.fromTimevalNoTruncate(globalObject, timevalUsec(rusage.stime), timevalSec(rusage.stime));
 
     cpu.put(globalObject, jsc.ZigString.static("user"), usrTime);
     cpu.put(globalObject, jsc.ZigString.static("system"), sysTime);
     cpu.put(globalObject, jsc.ZigString.static("total"), JSValue.bigIntSum(globalObject, usrTime, sysTime));
 
     return cpu;
+}
+
+fn timevalSec(timeval: anytype) @TypeOf(if (@hasField(@TypeOf(timeval), "sec")) timeval.sec else timeval.tv_sec) {
+    return if (@hasField(@TypeOf(timeval), "sec")) timeval.sec else timeval.tv_sec;
+}
+
+fn timevalUsec(timeval: anytype) @TypeOf(if (@hasField(@TypeOf(timeval), "usec")) timeval.usec else timeval.tv_usec) {
+    return if (@hasField(@TypeOf(timeval), "usec")) timeval.usec else timeval.tv_usec;
 }
 
 pub fn getMaxRSS(this: *ResourceUsage, _: *JSGlobalObject) JSValue {

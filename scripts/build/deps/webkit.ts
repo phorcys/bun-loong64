@@ -71,7 +71,7 @@ function prebuiltSuffix(cfg: Config): string {
 
 function prebuiltUrl(cfg: Config): string {
   const os = cfg.windows ? "windows" : cfg.darwin ? "macos" : cfg.freebsd ? "freebsd" : "linux";
-  const arch = cfg.arm64 ? "arm64" : "amd64";
+  const arch = cfg.loongarch64 ? "loongarch64" : cfg.arm64 ? "arm64" : "amd64";
   const name = `bun-webkit-${os}-${arch}${prebuiltSuffix(cfg)}`;
   const version = cfg.webkitVersion;
   const tag = version.startsWith("autobuild-") ? version : `autobuild-${version}`;
@@ -88,7 +88,7 @@ function prebuiltDestDir(cfg: Config): string {
   // so include os+arch in the key — otherwise a FreeBSD/arm64 extraction
   // collides with a Linux/x64 one at the same WebKit version.
   const osKey = cfg.freebsd ? "-freebsd" : cfg.abi === "android" ? "-android" : "";
-  const archKey = cfg.arm64 ? "-arm64" : "";
+  const archKey = cfg.loongarch64 ? "-loongarch64" : cfg.arm64 ? "-arm64" : "";
   return resolve(cfg.cacheDir, `webkit-${version16}${osKey}${archKey}${prebuiltSuffix(cfg)}`);
 }
 
@@ -150,6 +150,19 @@ function icuDir(cfg: Config): string {
 function localIcuLibs(cfg: Config): string[] {
   const dir = icuDir(cfg);
   return [resolve(dir, "lib", "sicudt.lib"), resolve(dir, "lib", "icuin.lib"), resolve(dir, "lib", "icuuc.lib")];
+}
+
+function loongarch64IcuRoot(cfg: Config): string {
+  return process.env.BUN_LOONGARCH64_ICU_ROOT ?? resolve(cfg.cwd, "build", "icu-loongarch64-gnu", "install");
+}
+
+function loongarch64IcuLibs(cfg: Config): string[] {
+  const root = loongarch64IcuRoot(cfg);
+  return [
+    resolve(root, "lib", "libicui18n.a"),
+    resolve(root, "lib", "libicuuc.a"),
+    resolve(root, "lib", "libicudata.a"),
+  ];
 }
 
 /**
@@ -251,6 +264,12 @@ export const webkit: Dependency = {
     if (cfg.freebsd && cfg.crossTarget !== undefined) {
       optFlags.push(`--target=${cfg.crossTarget}`, `--sysroot=${cfg.sysroot!}`);
     }
+    if (cfg.linux && cfg.crossTarget !== undefined && cfg.abi === "gnu") {
+      optFlags.push(`--target=${cfg.crossTarget}`);
+    }
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+      optFlags.push("-isystem", join(loongarch64IcuRoot(cfg), "include"));
+    }
     const optFlagStr = optFlags.join(" ");
     let cxxOptFlagStr = optFlagStr;
     if (cfg.abi === "android") {
@@ -294,10 +313,31 @@ export const webkit: Dependency = {
             CMAKE_FIND_ROOT_PATH_MODE_INCLUDE: "BOTH",
           }
         : {}),
+      ...(cfg.linux && cfg.crossTarget !== undefined && cfg.abi === "gnu"
+        ? {
+            CMAKE_SYSTEM_NAME: "Linux",
+            CMAKE_SYSTEM_PROCESSOR: cfg.loongarch64 ? "loongarch64" : cfg.arm64 ? "aarch64" : "x86_64",
+            ...(cfg.loongarch64
+              ? {
+                  ICU_ROOT: loongarch64IcuRoot(cfg),
+                  ICU_INCLUDE_DIR: join(loongarch64IcuRoot(cfg), "include"),
+                  ICU_DATA_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicudata.a"),
+                  ICU_I18N_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicui18n.a"),
+                  ICU_UC_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicuuc.a"),
+                  CMAKE_FIND_ROOT_PATH_MODE_PACKAGE: "BOTH",
+                  CMAKE_FIND_ROOT_PATH_MODE_LIBRARY: "BOTH",
+                  CMAKE_FIND_ROOT_PATH_MODE_INCLUDE: "BOTH",
+                }
+              : {}),
+          }
+        : {}),
       PORT: "JSCOnly",
       ENABLE_STATIC_JSC: "ON",
       USE_THIN_ARCHIVES: "OFF",
-      ENABLE_FTL_JIT: "ON",
+      ENABLE_C_LOOP: cfg.loongarch64 ? "ON" : "OFF",
+      ENABLE_JIT: cfg.loongarch64 ? "OFF" : "ON",
+      ENABLE_DFG_JIT: cfg.loongarch64 ? "OFF" : "ON",
+      ENABLE_FTL_JIT: cfg.loongarch64 ? "OFF" : "ON",
       CMAKE_EXPORT_COMPILE_COMMANDS: "ON",
       USE_BUN_JSC_ADDITIONS: "ON",
       USE_BUN_EVENT_LOOP: "ON",
@@ -388,8 +428,9 @@ export const webkit: Dependency = {
     // Windows ICU libs are NOT listed here — they're preBuild.outputs,
     // which source.ts appends to the resolved libs automatically. Listing
     // them here would make dep_build also claim to produce them (dup error).
-    // Posix uses system ICU (linked via -licu* in bun.ts). Android has no
-    // system ICU — link the static cross-built libs from BUN_ANDROID_ICU_ROOT.
+    // Posix uses system ICU (linked via -licu* in bun.ts), except LoongArch
+    // cross builds where the host distro ICU is the wrong architecture.
+    // Android has no system ICU — link static cross-built libs.
     const libs = [...coreLibs(cfg), bmallocLib(cfg)];
     if (cfg.abi === "android") {
       const icuRoot = process.env.BUN_ANDROID_ICU_ROOT ?? "/tmp/icu-android";
@@ -398,6 +439,9 @@ export const webkit: Dependency = {
         resolve(icuRoot, "lib", "libicuuc.a"),
         resolve(icuRoot, "lib", "libicudata.a"),
       );
+    }
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+      libs.push(...loongarch64IcuLibs(cfg));
     }
 
     const includes = [
@@ -416,6 +460,9 @@ export const webkit: Dependency = {
     // unicode/ headers are __INTRODUCED_IN(31)-gated and unusable at API 28).
     if (cfg.abi === "android") {
       includes.push(resolve(process.env.BUN_ANDROID_ICU_ROOT ?? "/tmp/icu-android", "include"));
+    }
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+      includes.push(resolve(loongarch64IcuRoot(cfg), "include"));
     }
 
     return { libs, includes };

@@ -85,11 +85,11 @@ export function zigObjectPaths(cfg: Config): string[] {
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * Zig target triple. Arch is always `x86_64`/`aarch64` (zig's naming),
- * not `x64`/`arm64`.
+ * Zig target triple. Arch uses zig's naming (`x86_64`, `aarch64`,
+ * `loongarch64`), not Bun's user-facing aliases (`x64`, `arm64`).
  */
 export function zigTarget(cfg: Config): string {
-  const arch = cfg.x64 ? "x86_64" : "aarch64";
+  const arch = cfg.x64 ? "x86_64" : cfg.arm64 ? "aarch64" : "loongarch64";
   if (cfg.darwin) return `${arch}-macos-none`;
   if (cfg.windows) return `${arch}-windows-msvc`;
   if (cfg.freebsd) {
@@ -113,6 +113,22 @@ export function zigTarget(cfg: Config): string {
  * writeIfChanged).
  */
 function crossLibcArgs(cfg: Config): string[] {
+  if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+    const libcFile = resolve(cfg.buildDir, "loongarch64-libc.txt");
+    writeIfChanged(
+      libcFile,
+      [
+        `include_dir=/usr/loongarch64-linux-gnu/include`,
+        `sys_include_dir=/usr/loongarch64-linux-gnu/include`,
+        `crt_dir=/usr/loongarch64-linux-gnu/lib`,
+        `msvc_lib_dir=`,
+        `kernel32_lib_dir=`,
+        `gcc_dir=/usr/lib/gcc-cross/loongarch64-linux-gnu/15`,
+        ``,
+      ].join("\n"),
+    );
+    return ["--libc", libcFile];
+  }
   if (cfg.abi === "android") {
     assert(cfg.sysroot !== undefined && cfg.androidApiLevel !== undefined, "android build missing sysroot");
     const archTriple = cfg.x64 ? "x86_64-linux-android" : "aarch64-linux-android";
@@ -188,6 +204,7 @@ export function zigOptimize(cfg: Config): "Debug" | "ReleaseFast" | "ReleaseSafe
  *
  * arm64: apple_m1 (darwin), cortex_a76 (windows — no ARMv9 windows yet),
  *   native (linux — no baseline arm64 builds needed).
+ * loongarch64: baseline generic model for cross-compilation.
  * x64: nehalem (baseline, pre-AVX), haswell (AVX2).
  */
 export function zigCpu(cfg: Config): string {
@@ -196,6 +213,7 @@ export function zigCpu(cfg: Config): string {
     if (cfg.windows) return "cortex_a76";
     return "native";
   }
+  if (cfg.loongarch64) return "baseline";
   // x64
   return cfg.baseline ? "nehalem" : "haswell";
 }

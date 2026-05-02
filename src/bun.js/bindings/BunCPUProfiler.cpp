@@ -3,6 +3,7 @@
 #include "ZigGlobalObject.h"
 #include "helpers.h"
 #include "BunString.h"
+#if ENABLE(SAMPLING_PROFILER)
 #include <JavaScriptCore/SamplingProfiler.h>
 #include <JavaScriptCore/VM.h>
 #include <JavaScriptCore/JSGlobalObject.h>
@@ -17,6 +18,9 @@
 #include <wtf/URL.h>
 #include <algorithm>
 #include <limits>
+#else
+#include <JavaScriptCore/VM.h>
+#endif
 
 extern "C" void Bun__startCPUProfiler(JSC::VM* vm);
 extern "C" void Bun__stopCPUProfiler(JSC::VM* vm, BunString* outJSON, BunString* outText);
@@ -27,6 +31,7 @@ void Bun__setSamplingInterval(int intervalMicroseconds)
     Bun::setSamplingInterval(intervalMicroseconds);
 }
 
+#if ENABLE(SAMPLING_PROFILER)
 namespace Bun {
 
 // Store the profiling start time in microseconds since Unix epoch
@@ -945,3 +950,41 @@ extern "C" void Bun__stopCPUProfiler(JSC::VM* vm, BunString* outJSON, BunString*
     if (outText)
         *outText = Bun::toStringRef(textResult);
 }
+#else
+namespace Bun {
+
+void setSamplingInterval(int) {}
+
+bool isCPUProfilerRunning()
+{
+    return false;
+}
+
+void startCPUProfiler(JSC::VM&) {}
+
+void stopCPUProfiler(JSC::VM&, WTF::String* outJSON, WTF::String* outText)
+{
+    if (outJSON)
+        *outJSON = "{}"_s;
+    if (outText)
+        *outText = "CPU profiler is not available in this build"_s;
+}
+
+} // namespace Bun
+
+extern "C" void Bun__startCPUProfiler(JSC::VM* vm)
+{
+    Bun::startCPUProfiler(*vm);
+}
+
+extern "C" void Bun__stopCPUProfiler(JSC::VM* vm, BunString* outJSON, BunString* outText)
+{
+    WTF::String jsonResult;
+    WTF::String textResult;
+    Bun::stopCPUProfiler(*vm, outJSON ? &jsonResult : nullptr, outText ? &textResult : nullptr);
+    if (outJSON)
+        *outJSON = Bun::toStringRef(jsonResult);
+    if (outText)
+        *outText = Bun::toStringRef(textResult);
+}
+#endif

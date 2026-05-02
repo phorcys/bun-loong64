@@ -203,6 +203,11 @@ export const zlib: Dependency = {
       }
       sources.push(...GENERIC.map(s => `arch/generic/${s}.c`));
       sources.push("arch/arm/arm_features.c");
+    } else if (cfg.loongarch64) {
+      kernels = [];
+      archDir = "generic";
+      sources.push(...GENERIC.map(s => `arch/generic/${s}.c`));
+      defines.WITH_ALL_FALLBACKS = true;
     } else {
       throw new Error(`zlib: no SIMD kernel table for arch ${cfg.arch}`);
     }

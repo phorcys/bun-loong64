@@ -525,7 +525,9 @@ pub fn stat(path: [:0]const u8) Maybe(bun.Stat) {
     } else {
         while (true) {
             var stat_ = mem.zeroes(bun.Stat);
-            const rc = if (Environment.isLinux)
+            const rc = if (Environment.isLinux and Environment.isLoongArch64)
+                workaround_symbols.stat(path, &stat_)
+            else if (Environment.isLinux)
                 // aarch64 linux doesn't implement a "stat" syscall. It's all fstatat.
                 linux.fstatat(std.posix.AT.FDCWD, path, &stat_, 0)
             else
@@ -848,7 +850,11 @@ pub fn fstatat(fd: bun.FD, path: [:0]const u8) Maybe(bun.Stat) {
     const fd_valid = if (fd == bun.invalid_fd) std.posix.AT.FDCWD else fd.native();
     while (true) {
         var stat_buf = mem.zeroes(bun.Stat);
-        if (Maybe(bun.Stat).errnoSysFP(syscall.fstatat(fd_valid, path, &stat_buf, 0), .fstatat, fd, path)) |err| {
+        const rc = if (Environment.isLinux and Environment.isLoongArch64)
+            workaround_symbols.fstatat(fd_valid, path, &stat_buf, 0)
+        else
+            syscall.fstatat(fd_valid, path, &stat_buf, 0);
+        if (Maybe(bun.Stat).errnoSysFP(rc, .fstatat, fd, path)) |err| {
             if (err.getErrno() == .INTR) continue;
             log("fstatat({f}, {s}) = {s}", .{ fd, path, @tagName(err.getErrno()) });
             return err;
@@ -874,7 +880,11 @@ pub fn lstatat(fd: bun.FD, path: [:0]const u8) Maybe(bun.Stat) {
     const fd_valid = if (fd == bun.invalid_fd) std.posix.AT.FDCWD else fd.native();
     while (true) {
         var stat_buf = mem.zeroes(bun.Stat);
-        if (Maybe(bun.Stat).errnoSysFP(syscall.fstatat(fd_valid, path, &stat_buf, std.posix.AT.SYMLINK_NOFOLLOW), .fstatat, fd, path)) |err| {
+        const rc = if (Environment.isLinux and Environment.isLoongArch64)
+            workaround_symbols.fstatat(fd_valid, path, &stat_buf, std.posix.AT.SYMLINK_NOFOLLOW)
+        else
+            syscall.fstatat(fd_valid, path, &stat_buf, std.posix.AT.SYMLINK_NOFOLLOW);
+        if (Maybe(bun.Stat).errnoSysFP(rc, .fstatat, fd, path)) |err| {
             if (err.getErrno() == .INTR) continue;
             log("lstatat({f}, {s}) = {s}", .{ fd, path, @tagName(err.getErrno()) });
             return err;
