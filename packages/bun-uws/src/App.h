@@ -132,7 +132,8 @@ public:
         /* Do nothing if not even on SSL */
         if constexpr (SSL) {
             enum create_bun_socket_error_t err = CREATE_BUN_SOCKET_ERROR_NONE;
-            struct ssl_ctx_st *domainCtx = us_ssl_ctx_from_options(options, &err);
+            struct us_bun_socket_context_options_t c_options = options;
+            struct ssl_ctx_st *domainCtx = us_ssl_ctx_from_options(&c_options, &err);
             if (!domainCtx) {
                 if (success) *success = false;
                 return std::move(*this);
@@ -295,7 +296,8 @@ private:
     TemplatedApp(SocketContextOptions options) {
         if constexpr (SSL) {
             enum create_bun_socket_error_t err = CREATE_BUN_SOCKET_ERROR_NONE;
-            sslCtx = us_ssl_ctx_from_options(options, &err);
+            struct us_bun_socket_context_options_t c_options = options;
+            sslCtx = us_ssl_ctx_from_options(&c_options, &err);
             if (!sslCtx) { httpContext = nullptr; return; }
         }
         httpContext = HttpContext<SSL>::create(Loop::get(), options.request_cert, options.reject_unauthorized);

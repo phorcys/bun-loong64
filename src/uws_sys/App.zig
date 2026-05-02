@@ -48,7 +48,7 @@ pub fn NewApp(comptime ssl: bool) type {
         }
 
         pub fn create(opts: BunSocketContextOptions) ?*ThisApp {
-            return @ptrCast(c.uws_create_app(ssl_flag, opts));
+            return @ptrCast(c.uws_create_app(ssl_flag, &opts));
         }
 
         pub fn destroy(app: *ThisApp) void {
@@ -352,7 +352,7 @@ pub fn NewApp(comptime ssl: bool) type {
             return c.uws_add_server_name(ssl_flag, @as(*uws_app_t, @ptrCast(app)), hostname_pattern);
         }
         pub fn addServerNameWithOptions(app: *ThisApp, hostname_pattern: [*:0]const u8, opts: BunSocketContextOptions) !void {
-            if (c.uws_add_server_name_with_options(ssl_flag, @as(*uws_app_t, @ptrCast(app)), hostname_pattern, opts) != 0) {
+            if (c.uws_add_server_name_with_options(ssl_flag, @as(*uws_app_t, @ptrCast(app)), hostname_pattern, &opts) != 0) {
                 return error.FailedToAddServerName;
             }
         }
@@ -400,7 +400,7 @@ pub const c = struct {
     pub extern fn uws_app_close(ssl: i32, app: *uws_app_s) void;
     pub extern fn uws_app_close_idle(ssl: i32, app: *uws_app_s) void;
     pub extern fn uws_app_set_on_clienterror(ssl: c_int, app: *uws_app_s, handler: *const fn (*anyopaque, c_int, *us_socket_t, u8, ?[*]u8, c_int) callconv(.c) void, user_data: *anyopaque) void;
-    pub extern fn uws_create_app(ssl: i32, options: BunSocketContextOptions) ?*uws_app_t;
+    pub extern fn uws_create_app(ssl: i32, options: *const BunSocketContextOptions) ?*uws_app_t;
     pub extern fn uws_app_destroy(ssl: i32, app: *uws_app_t) void;
     pub extern fn uws_app_set_flags(ssl: i32, app: *uws_app_t, require_host_header: bool, use_strict_method_validation: bool) void;
     pub extern fn uws_app_set_max_http_header_size(ssl: i32, app: *uws_app_t, max_header_size: u64) void;
@@ -432,7 +432,7 @@ pub const c = struct {
     pub extern fn uws_get_native_handle(ssl: i32, app: *anyopaque) ?*anyopaque;
     pub extern fn uws_remove_server_name(ssl: i32, app: *uws_app_t, hostname_pattern: [*c]const u8) void;
     pub extern fn uws_add_server_name(ssl: i32, app: *uws_app_t, hostname_pattern: [*c]const u8) void;
-    pub extern fn uws_add_server_name_with_options(ssl: i32, app: *uws_app_t, hostname_pattern: [*c]const u8, options: BunSocketContextOptions) i32;
+    pub extern fn uws_add_server_name_with_options(ssl: i32, app: *uws_app_t, hostname_pattern: [*c]const u8, options: *const BunSocketContextOptions) i32;
     pub extern fn uws_missing_server_name(ssl: i32, app: *uws_app_t, handler: uws_missing_server_handler, user_data: ?*anyopaque) void;
     pub extern fn uws_filter(ssl: i32, app: *uws_app_t, handler: uws_filter_handler, user_data: ?*anyopaque) void;
 

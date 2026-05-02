@@ -8,8 +8,8 @@
 #include "JavaScriptCore/Completion.h"
 #include "JavaScriptCore/JSSourceCode.h"
 
-extern "C" BunString BakeProdResolve(JSC::JSGlobalObject*, BunString a, BunString b);
-extern "C" BunString BakeToWindowsPath(BunString a);
+extern "C" void BakeProdResolve(JSC::JSGlobalObject*, const BunString* a, const BunString* b, BunString* out);
+extern "C" void BakeToWindowsPath(const BunString* a, BunString* out);
 
 namespace Bake {
 using namespace JSC;
@@ -40,7 +40,10 @@ bakeModuleLoaderImportModule(JSC::JSGlobalObject* global,
             return promise;
         }
 
-        BunString result = BakeProdResolve(global, Bun::toString(refererString), Bun::toString(keyString));
+        BunString referer = Bun::toString(refererString);
+        BunString keyBun = Bun::toString(keyString);
+        BunString result;
+        BakeProdResolve(global, &referer, &keyBun, &result);
         RETURN_IF_EXCEPTION(scope, nullptr);
 
         return JSC::importModule(global, JSC::Identifier::fromString(vm, result.toWTFString()),
@@ -67,7 +70,10 @@ JSC::Identifier bakeModuleLoaderResolve(JSC::JSGlobalObject* jsGlobal,
         RETURN_IF_EXCEPTION(scope, vm.propertyNames->emptyIdentifier);
 
         if (refererString.startsWith("bake:/"_s) || (refererString == "."_s && keyString.startsWith("bake:/"_s))) {
-            BunString result = BakeProdResolve(global, Bun::toString(referrer.getString(global)), Bun::toString(keyString));
+            BunString referer = Bun::toString(referrer.getString(global));
+            BunString keyBun = Bun::toString(keyString);
+            BunString result;
+            BakeProdResolve(global, &referer, &keyBun, &result);
             RETURN_IF_EXCEPTION(scope, vm.propertyNames->emptyIdentifier);
 
             return JSC::Identifier::fromString(vm, result.toWTFString(BunString::ZeroCopy));
@@ -79,7 +85,10 @@ JSC::Identifier bakeModuleLoaderResolve(JSC::JSGlobalObject* jsGlobal,
         RETURN_IF_EXCEPTION(scope, vm.propertyNames->emptyIdentifier);
 
         if (keyView.startsWith("bake:/"_s)) {
-            BunString result = BakeProdResolve(global, Bun::toString("bake:/"_s), Bun::toString(keyView.substringSharingImpl("bake:"_s.length())));
+            BunString referer = Bun::toString("bake:/"_s);
+            BunString keyBun = Bun::toString(keyView.substringSharingImpl("bake:"_s.length()));
+            BunString result;
+            BakeProdResolve(global, &referer, &keyBun, &result);
             RETURN_IF_EXCEPTION(scope, vm.propertyNames->emptyIdentifier);
 
             return JSC::Identifier::fromString(vm, result.transferToWTFString());
@@ -106,7 +115,7 @@ static JSC::JSPromise* resolvedInternalPromise(JSC::JSGlobalObject* globalObject
     return promise;
 }
 
-extern "C" BunString BakeProdLoad(void* perThreadData, BunString a);
+extern "C" void BakeProdLoad(void* perThreadData, const BunString* a, BunString* out);
 
 extern "C" bool BakeGlobalObject__isBakeGlobalObject(JSC::JSGlobalObject* global)
 {
@@ -132,7 +141,9 @@ JSC::JSPromise* bakeModuleLoaderFetch(JSC::JSGlobalObject* globalObject,
 
     if (moduleKey.startsWith("bake:/"_s)) {
         if (global->m_perThreadData) [[likely]] {
-            BunString source = BakeProdLoad(global->m_perThreadData, Bun::toString(moduleKey));
+            BunString moduleKeyBun = Bun::toString(moduleKey);
+            BunString source;
+            BakeProdLoad(global->m_perThreadData, &moduleKeyBun, &source);
             if (source.tag != BunStringTag::Dead) {
                 JSC::SourceOrigin origin = JSC::SourceOrigin(WTF::URL(moduleKey));
                 JSC::SourceCode sourceCode = JSC::SourceCode(Bake::SourceProvider::create(
@@ -158,7 +169,9 @@ JSC::JSPromise* bakeModuleLoaderFetch(JSC::JSGlobalObject* globalObject,
             // have to worry about platform paths. Now we have to worry about
             // it, because `moduleLoaderFetch(...)` may read the path from disk
             // and so we need to give a Windows path to it.
-            auto temp = BakeToWindowsPath(Bun::toString(bakePrefixRemoved));
+            BunString path = Bun::toString(bakePrefixRemoved);
+            BunString temp;
+            BakeToWindowsPath(&path, &temp);
             bakePrefixRemoved = temp.toWTFString();
 #endif
             JSString* bakePrefixRemovedString = jsNontrivialString(vm, bakePrefixRemoved);

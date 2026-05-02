@@ -113,7 +113,7 @@ export fn us_dispatch_connect_error(s: *us_socket_t, code: c_int) ?*us_socket_t 
 export fn us_dispatch_connecting_error(c: *ConnectingSocket, code: c_int) ?*ConnectingSocket {
     return if (vtc(c).on_connecting_error) |f| f(c, code) else c;
 }
-export fn us_dispatch_handshake(s: *us_socket_t, ok: c_int, err: uws.us_bun_verify_error_t) void {
+export fn us_dispatch_handshake(s: *us_socket_t, ok: c_int, err: *const uws.us_bun_verify_error_t) void {
     if (vt(s).on_handshake) |f| f(s, ok, err, null);
 }
 

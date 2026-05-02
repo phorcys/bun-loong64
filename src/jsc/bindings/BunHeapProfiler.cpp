@@ -954,8 +954,18 @@ extern "C" BunString Bun__generateHeapProfile(JSC::VM* vm)
     return Bun::toStringRef(result);
 }
 
+extern "C" void Bun__generateHeapProfile_out(JSC::VM* vm, BunString* out)
+{
+    *out = Bun__generateHeapProfile(vm);
+}
+
 extern "C" BunString Bun__generateHeapSnapshotV8(JSC::VM* vm)
 {
     WTF::String result = Bun::generateHeapSnapshotV8(*vm);
     return Bun::toStringRef(result);
+}
+
+extern "C" void Bun__generateHeapSnapshotV8_out(JSC::VM* vm, BunString* out)
+{
+    *out = Bun__generateHeapSnapshotV8(vm);
 }

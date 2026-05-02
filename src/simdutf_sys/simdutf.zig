@@ -51,15 +51,15 @@ pub extern fn simdutf__validate_utf32(buf: [*c]const c_uint, len: usize) bool;
 pub extern fn simdutf__validate_utf32_with_errors(buf: [*c]const c_uint, len: usize) SIMDUTFResult;
 pub extern fn simdutf__convert_utf8_to_utf16le(buf: [*]const u8, len: usize, utf16_output: [*]u16) usize;
 pub extern fn simdutf__convert_utf8_to_utf16be(buf: [*]const u8, len: usize, utf16_output: [*]u16) usize;
-pub extern fn simdutf__convert_utf8_to_utf16le_with_errors(buf: [*]const u8, len: usize, utf16_output: [*]u16) SIMDUTFResult;
-pub extern fn simdutf__convert_utf8_to_utf16be_with_errors(buf: [*]const u8, len: usize, utf16_output: [*]u16) SIMDUTFResult;
+pub extern fn simdutf__convert_utf8_to_utf16le_with_errors_out(buf: [*]const u8, len: usize, utf16_output: [*]u16, out: *SIMDUTFResult) void;
+pub extern fn simdutf__convert_utf8_to_utf16be_with_errors_out(buf: [*]const u8, len: usize, utf16_output: [*]u16, out: *SIMDUTFResult) void;
 pub extern fn simdutf__convert_valid_utf8_to_utf16be(buf: [*]const u8, len: usize, utf16_buffer: [*]u16) usize;
 pub extern fn simdutf__convert_utf8_to_utf32(buf: [*]const u8, len: usize, utf32_output: [*]u32) usize;
 pub extern fn simdutf__convert_utf8_to_utf32_with_errors(buf: [*]const u8, len: usize, utf32_output: [*]u32) SIMDUTFResult;
 pub extern fn simdutf__convert_valid_utf8_to_utf32(buf: [*]const u8, len: usize, utf32_buffer: [*]u32) usize;
 pub extern fn simdutf__convert_utf16le_to_utf8(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) usize;
 pub extern fn simdutf__convert_utf16be_to_utf8(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) usize;
-pub extern fn simdutf__convert_utf16le_to_utf8_with_errors(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) SIMDUTFResult;
+pub extern fn simdutf__convert_utf16le_to_utf8_with_errors_out(buf: [*]const u16, len: usize, utf8_buffer: [*]u8, out: *SIMDUTFResult) void;
 pub extern fn simdutf__convert_utf16be_to_utf8_with_errors(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) SIMDUTFResult;
 pub extern fn simdutf__convert_valid_utf16le_to_utf8(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) usize;
 pub extern fn simdutf__convert_valid_utf16be_to_utf8(buf: [*]const u16, len: usize, utf8_buffer: [*]u8) usize;
@@ -139,10 +139,14 @@ pub const convert = struct {
             pub const utf16 = struct {
                 pub const with_errors = struct {
                     pub fn le(input: []const u8, output: []u16) SIMDUTFResult {
-                        return simdutf__convert_utf8_to_utf16le_with_errors(input.ptr, input.len, output.ptr);
+                        var result: SIMDUTFResult = undefined;
+                        simdutf__convert_utf8_to_utf16le_with_errors_out(input.ptr, input.len, output.ptr, &result);
+                        return result;
                     }
                     pub fn be(input: []const u8, output: []u16) SIMDUTFResult {
-                        return simdutf__convert_utf8_to_utf16be_with_errors(input.ptr, input.len, output.ptr);
+                        var result: SIMDUTFResult = undefined;
+                        simdutf__convert_utf8_to_utf16be_with_errors_out(input.ptr, input.len, output.ptr, &result);
+                        return result;
                     }
                 };
 
@@ -179,7 +183,9 @@ pub const convert = struct {
             pub const utf8 = struct {
                 pub const with_errors = struct {
                     pub fn le(input: []const u16, output: []u8) SIMDUTFResult {
-                        return simdutf__convert_utf16le_to_utf8_with_errors(input.ptr, input.len, output.ptr);
+                        var result: SIMDUTFResult = undefined;
+                        simdutf__convert_utf16le_to_utf8_with_errors_out(input.ptr, input.len, output.ptr, &result);
+                        return result;
                     }
                     pub fn be(input: []const u16, output: []u8) SIMDUTFResult {
                         return simdutf__convert_utf16be_to_utf8_with_errors(input.ptr, input.len, output.ptr);

@@ -232,7 +232,9 @@ pub const us_socket_t = opaque {
     }
 
     pub fn getVerifyError(this: *us_socket_t) uws.us_bun_verify_error_t {
-        return c.us_socket_verify_error(this);
+        var err: uws.us_bun_verify_error_t = .{};
+        c.us_socket_verify_error_out(this, &err);
+        return err;
     }
 
     pub fn getError(this: *us_socket_t) i32 {
@@ -282,7 +284,7 @@ const c = struct {
     extern fn us_socket_is_shut_down(s: *us_socket_t) i32;
     extern fn us_socket_sendfile_needs_more(socket: *us_socket_t) void;
     extern fn us_socket_get_fd(s: *us_socket_t) uws.LIBUS_SOCKET_DESCRIPTOR;
-    extern fn us_socket_verify_error(s: *us_socket_t) uws.us_bun_verify_error_t;
+    extern fn us_socket_verify_error_out(s: *us_socket_t, out: *uws.us_bun_verify_error_t) void;
     extern fn us_socket_get_error(s: *us_socket_t) c_int;
     extern fn us_socket_is_established(s: *us_socket_t) i32;
 

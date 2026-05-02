@@ -9,8 +9,9 @@ use bun_paths::resolve_path;
 #[unsafe(no_mangle)]
 pub extern "C" fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
     global_object: &JSGlobalObject,
-    input: BunString,
-) -> BunString {
+    input: &BunString,
+    out: &mut BunString,
+) {
     let str = input.to_utf8_without_ref();
 
     // Spec: `globalObject.bunVM().transpiler.fs.top_level_dir`. The Phase-B
@@ -31,7 +32,7 @@ pub extern "C" fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
         &[str.slice()],
     );
 
-    BunString::clone_utf8(out_slice)
+    *out = BunString::clone_utf8(out_slice);
 }
 
 // ported from: src/jsc/resolve_path_jsc.zig

@@ -1320,7 +1320,7 @@ pub const CommandLineReporter = struct {
     }
 };
 
-export fn BunTest__shouldGenerateCodeCoverage(test_name_str: bun.String) callconv(.c) bool {
+export fn BunTest__shouldGenerateCodeCoverage(test_name_str: *const bun.String) callconv(.c) bool {
     var zig_slice: bun.jsc.ZigString.Slice = .{};
     defer zig_slice.deinit();
 

@@ -2239,7 +2239,8 @@ fn loadPreloads(this: *VirtualMachine) !?*JSInternalPromise {
                 return error.ModuleNotFound;
             },
         };
-        var promise = try JSModuleLoader.import(this.global, &String.fromBytes(result.path().?.text));
+        var preload_path_string = String.fromBytes(result.path().?.text);
+        var promise = try JSModuleLoader.import(this.global, &preload_path_string);
 
         this.pending_internal_promise = promise;
         JSValue.fromCell(promise).protect();
@@ -2336,7 +2337,10 @@ pub fn reloadEntryPoint(this: *VirtualMachine, entry_path: []const u8) !*JSInter
         }
 
         const promise = if (!this.main_is_html_entrypoint)
-            JSModuleLoader.loadAndEvaluateModule(this.global, &String.init(main_file_name)) orelse return error.JSError
+        brk: {
+            var main_file_name_string = String.init(main_file_name);
+            break :brk JSModuleLoader.loadAndEvaluateModule(this.global, &main_file_name_string) orelse return error.JSError;
+        }
         else
             try jsc.fromJSHostCallGeneric(this.global, @src(), Bun__loadHTMLEntryPoint, .{this.global});
 
@@ -2345,7 +2349,8 @@ pub fn reloadEntryPoint(this: *VirtualMachine, entry_path: []const u8) !*JSInter
         JSValue.fromCell(promise).ensureStillAlive();
         return promise;
     } else {
-        const promise = JSModuleLoader.loadAndEvaluateModule(this.global, &String.fromBytes(this.main)) orelse return error.JSError;
+        var main_string = String.fromBytes(this.main);
+        const promise = JSModuleLoader.loadAndEvaluateModule(this.global, &main_string) orelse return error.JSError;
         this.pending_internal_promise = promise;
         this.pending_internal_promise_is_protected = false;
         JSValue.fromCell(promise).ensureStillAlive();
@@ -2398,7 +2403,8 @@ pub fn reloadEntryPointForTestRunner(this: *VirtualMachine, entry_path: []const 
         }
     }
 
-    const promise = JSModuleLoader.loadAndEvaluateModule(this.global, &String.fromBytes(this.main)) orelse return error.JSError;
+    var main_string = String.fromBytes(this.main);
+    const promise = JSModuleLoader.loadAndEvaluateModule(this.global, &main_string) orelse return error.JSError;
     this.pending_internal_promise = promise;
     this.pending_internal_promise_is_protected = false;
     JSValue.fromCell(promise).ensureStillAlive();
@@ -2641,7 +2647,8 @@ const MacroEntryPointLoader = struct {
 pub inline fn _loadMacroEntryPoint(this: *VirtualMachine, entry_path: string) ?*JSInternalPromise {
     var promise: *JSInternalPromise = undefined;
 
-    promise = JSModuleLoader.loadAndEvaluateModule(this.global, &String.init(entry_path)) orelse return null;
+    var entry_path_string = String.init(entry_path);
+    promise = JSModuleLoader.loadAndEvaluateModule(this.global, &entry_path_string) orelse return null;
     this.waitForPromise(jsc.AnyPromise{
         .internal = promise,
     });

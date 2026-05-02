@@ -288,7 +288,7 @@ static inline JSC::EncodedJSValue jsDOMFormDataPrototypeFunction_append1Body(JSC
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLUndefined>(*lexicalGlobalObject, throwScope, [&]() -> decltype(auto) { return impl.append(WTF::move(name), WTF::move(value)); })));
 }
 
-extern "C" BunString Blob__getFileNameString(void* impl);
+extern "C" void Blob__getFileNameString(void* impl, BunString* out);
 
 static inline JSC::EncodedJSValue jsDOMFormDataPrototypeFunction_append2Body(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSDOMFormData>::ClassParameter castedThis)
 {
@@ -313,7 +313,11 @@ static inline JSC::EncodedJSValue jsDOMFormDataPrototypeFunction_append2Body(JSC
     RETURN_IF_EXCEPTION(throwScope, {});
 
     EnsureStillAliveScope argument2 = callFrame->argument(2);
-    auto filename = argument2.value().isUndefined() ? Blob__getFileNameString(blobValue->impl()).toWTFString(BunString::ZeroCopy) : convert<IDLUSVString>(*lexicalGlobalObject, argument2.value());
+    BunString defaultFilename;
+    if (argument2.value().isUndefined()) {
+        Blob__getFileNameString(blobValue->impl(), &defaultFilename);
+    }
+    auto filename = argument2.value().isUndefined() ? defaultFilename.toWTFString(BunString::ZeroCopy) : convert<IDLUSVString>(*lexicalGlobalObject, argument2.value());
     RETURN_IF_EXCEPTION(throwScope, {});
 
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLUndefined>(*lexicalGlobalObject, throwScope, [&]() -> decltype(auto) { return impl.append(WTF::move(name), WTF::move(blobValue), WTF::move(filename)); })));
@@ -480,7 +484,11 @@ static inline JSC::EncodedJSValue jsDOMFormDataPrototypeFunction_set2Body(JSC::J
     }
     RETURN_IF_EXCEPTION(throwScope, {});
 
-    auto filename = argument2.value().isUndefined() ? Blob__getFileNameString(blobValue->impl()).toWTFString(BunString::ZeroCopy) : convert<IDLUSVString>(*lexicalGlobalObject, argument2.value());
+    BunString defaultFilename;
+    if (argument2.value().isUndefined()) {
+        Blob__getFileNameString(blobValue->impl(), &defaultFilename);
+    }
+    auto filename = argument2.value().isUndefined() ? defaultFilename.toWTFString(BunString::ZeroCopy) : convert<IDLUSVString>(*lexicalGlobalObject, argument2.value());
     RETURN_IF_EXCEPTION(throwScope, {});
 
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLUndefined>(*lexicalGlobalObject, throwScope, [&]() -> decltype(auto) { return impl.set(WTF::move(name), WTF::move(blobValue), WTF::move(filename)); })));

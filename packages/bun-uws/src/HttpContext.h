@@ -149,14 +149,14 @@ public:
 private:
     /* ── vtable handlers ─────────────────────────────────────────────────── */
 
-    static void onHandshake(us_socket_t *s, int success, struct us_bun_verify_error_t verify_error, void * /*custom_data*/) {
+    static void onHandshake(us_socket_t *s, int success, const struct us_bun_verify_error_t *verify_error, void * /*custom_data*/) {
         // if we are closing or already closed, we don't need to do anything
         if (!us_socket_is_closed(s)) {
             HttpContextData<SSL> *httpContextData = getSocketContextDataS(s);
             // Set per-socket authorization status
             auto *httpResponseData = reinterpret_cast<HttpResponseData<SSL> *>(us_socket_ext(s));
             if(httpContextData->flags.rejectUnauthorized) {
-                if(!success || verify_error.error != 0) {
+                if(!success || verify_error->error != 0) {
                     // we failed to handshake, close the socket
                     us_socket_close(s, 0, nullptr);
                     return;

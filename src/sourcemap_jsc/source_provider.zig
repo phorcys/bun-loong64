@@ -7,8 +7,12 @@ extern "c" fn BakeGlobalObject__isBakeGlobalObject(global: *bun.jsc.JSGlobalObje
 extern "c" fn BakeGlobalObject__getPerThreadData(global: *bun.jsc.JSGlobalObject) *bun.bake.production.PerThread;
 
 pub const BakeSourceProvider = opaque {
-    extern fn BakeSourceProvider__getSourceSlice(*BakeSourceProvider) bun.String;
-    pub const getSourceSlice = BakeSourceProvider__getSourceSlice;
+    extern fn BakeSourceProvider__getSourceSlice_out(*BakeSourceProvider, *bun.String) void;
+    pub fn getSourceSlice(this: *BakeSourceProvider) bun.String {
+        var out: bun.String = undefined;
+        BakeSourceProvider__getSourceSlice_out(this, &out);
+        return out;
+    }
 
     pub fn toSourceContentPtr(this: *BakeSourceProvider) SourceMap.ParsedSourceMap.SourceContentPtr {
         return SourceMap.ParsedSourceMap.SourceContentPtr.fromBakeProvider(this);

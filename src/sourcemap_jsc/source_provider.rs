@@ -22,7 +22,7 @@ unsafe extern "C" {
     /// concrete layout, so here it's `*mut c_void` and the field access is
     /// dispatched through `RuntimeHooks::bake_per_thread_source_map`.
     fn BakeGlobalObject__getPerThreadData(global: *mut JSGlobalObject) -> *mut core::ffi::c_void;
-    fn BakeSourceProvider__getSourceSlice(this: *mut BakeSourceProvider) -> BunString;
+    fn BakeSourceProvider__getSourceSlice_out(this: *mut BakeSourceProvider, out: *mut BunString);
 }
 
 bun_opaque::opaque_ffi! {
@@ -34,7 +34,9 @@ impl BakeSourceProvider {
     #[inline]
     pub fn get_source_slice(&self) -> BunString {
         // SAFETY: `self` is a live `*BakeSourceProvider` handed back to C++.
-        unsafe { BakeSourceProvider__getSourceSlice(self.as_mut_ptr()) }
+        let mut out = BunString::default();
+        unsafe { BakeSourceProvider__getSourceSlice_out(self.as_mut_ptr(), &mut out) };
+        out
     }
 
     pub fn to_source_content_ptr(&self) -> source_map::parsed_source_map::SourceContentPtr {

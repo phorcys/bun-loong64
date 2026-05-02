@@ -28,10 +28,10 @@ extern "C"
     loopData->updateDate();
   }
 
-  uws_app_t *uws_create_app(int ssl, struct us_bun_socket_context_options_t options)
+  uws_app_t *uws_create_app(int ssl, const struct us_bun_socket_context_options_t *options)
   {
     uWS::SocketContextOptions socket_context_options;
-    memcpy(&socket_context_options, &options,
+    memcpy(&socket_context_options, options,
            sizeof(uWS::SocketContextOptions));
     if (ssl)
     {
@@ -640,10 +640,10 @@ extern "C"
   }
   int uws_add_server_name_with_options(
       int ssl, uws_app_t *app, const char *hostname_pattern,
-      struct us_bun_socket_context_options_t options)
+      const struct us_bun_socket_context_options_t *options)
   {
     uWS::SocketContextOptions sco;
-    memcpy(&sco, &options, sizeof(uWS::SocketContextOptions));
+    memcpy(&sco, options, sizeof(uWS::SocketContextOptions));
     bool success = false;
 
     if (ssl)

@@ -486,8 +486,12 @@ pub fn getSourceMapImpl(
 ///
 /// This is used for files that were pre-bundled with `bun build --target=bun --sourcemap`
 pub const SourceProviderMap = opaque {
-    extern fn ZigSourceProvider__getSourceSlice(*SourceProviderMap) bun.String;
-    pub const getSourceSlice = ZigSourceProvider__getSourceSlice;
+    extern fn ZigSourceProvider__getSourceSlice_out(*SourceProviderMap, *bun.String) void;
+    pub fn getSourceSlice(this: *SourceProviderMap) bun.String {
+        var out: bun.String = undefined;
+        ZigSourceProvider__getSourceSlice_out(this, &out);
+        return out;
+    }
     pub fn toSourceContentPtr(this: *SourceProviderMap) ParsedSourceMap.SourceContentPtr {
         return ParsedSourceMap.SourceContentPtr.fromProvider(this);
     }
@@ -517,10 +521,14 @@ pub const DevServerSourceProvider = opaque {
         length: usize,
     };
 
-    extern fn DevServerSourceProvider__getSourceSlice(*DevServerSourceProvider) bun.String;
+    extern fn DevServerSourceProvider__getSourceSlice_out(*DevServerSourceProvider, *bun.String) void;
     extern fn DevServerSourceProvider__getSourceMapJSON(*DevServerSourceProvider) SourceMapData;
 
-    pub const getSourceSlice = DevServerSourceProvider__getSourceSlice;
+    pub fn getSourceSlice(this: *DevServerSourceProvider) bun.String {
+        var out: bun.String = undefined;
+        DevServerSourceProvider__getSourceSlice_out(this, &out);
+        return out;
+    }
     pub const getSourceMapJSON = DevServerSourceProvider__getSourceMapJSON;
 
     pub fn toSourceContentPtr(this: *DevServerSourceProvider) ParsedSourceMap.SourceContentPtr {

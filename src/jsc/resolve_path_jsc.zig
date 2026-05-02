@@ -4,8 +4,9 @@
 
 export fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
     globalObject: *bun.jsc.JSGlobalObject,
-    in: bun.String,
-) bun.String {
+    in: *const bun.String,
+    out: *bun.String,
+) void {
     const str = in.toUTF8WithoutRef(bun.default_allocator);
     defer str.deinit();
 
@@ -26,7 +27,7 @@ export fn ResolvePath__joinAbsStringBufCurrentPlatformBunString(
         .auto,
     );
 
-    return bun.String.cloneUTF8(out_slice);
+    out.* = bun.String.cloneUTF8(out_slice);
 }
 
 const bun = @import("bun");

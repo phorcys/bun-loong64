@@ -125,8 +125,8 @@ pub const O = switch (Environment.os) {
 
         pub const toPacked = toPackedO;
     },
-    .linux, .wasm => switch (Environment.isX86) {
-        true => struct {
+    .linux, .wasm => switch (builtin.target.cpu.arch) {
+        .x86, .x86_64, .riscv32, .riscv64, .loongarch64 => struct {
             pub const RDONLY = 0x0000;
             pub const WRONLY = 0x0001;
             pub const RDWR = 0x0002;
@@ -154,7 +154,7 @@ pub const O = switch (Environment.os) {
 
             pub const toPacked = toPackedO;
         },
-        false => struct {
+        else => struct {
             pub const RDONLY = 0x0000;
             pub const WRONLY = 0x0001;
             pub const RDWR = 0x0002;

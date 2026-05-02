@@ -61,7 +61,10 @@ unsafe extern "C" {
     // casting away const from the `&self` borrow below; any interior mutation
     // lives behind the FFI boundary in C++-owned storage that Rust has no
     // provenance over (this type is an opaque ZST marker).
-    fn BakeSourceProvider__getSourceSlice(this: *const BakeSourceProvider) -> bun_core::String;
+    fn BakeSourceProvider__getSourceSlice_out(
+        this: *const BakeSourceProvider,
+        out: *mut bun_core::String,
+    );
 }
 
 unsafe extern "Rust" {
@@ -82,7 +85,9 @@ impl BakeSourceProvider {
     pub fn get_source_slice(&self) -> bun_core::String {
         // SAFETY: opaque FFI handle; address-only pass-through, callee does not
         // write Rust-visible memory.
-        unsafe { BakeSourceProvider__getSourceSlice(self) }
+        let mut out = bun_core::String::default();
+        unsafe { BakeSourceProvider__getSourceSlice_out(self, &mut out) };
+        out
     }
 
     pub fn to_source_content_ptr(&self) -> SourceContentPtr {
@@ -467,12 +472,17 @@ unsafe extern "C" {
     // bytes of it), so `&SourceProviderMap` carries no `readonly`/`noalias` —
     // the foreign side owns all state behind the handle and may mutate it. The
     // only param is that handle reference, so this is a `safe fn`.
-    safe fn ZigSourceProvider__getSourceSlice(this: &SourceProviderMap) -> bun_core::String;
+    safe fn ZigSourceProvider__getSourceSlice_out(
+        this: &SourceProviderMap,
+        out: *mut bun_core::String,
+    );
 }
 
 impl SourceProviderMap {
     pub fn get_source_slice(&self) -> bun_core::String {
-        ZigSourceProvider__getSourceSlice(self)
+        let mut out = bun_core::String::default();
+        ZigSourceProvider__getSourceSlice_out(self, &mut out);
+        out
     }
 
     pub fn to_source_content_ptr(&self) -> SourceContentPtr {
@@ -514,9 +524,10 @@ unsafe extern "C" {
     // const from the `&self` borrow below; any interior mutation lives behind
     // the FFI boundary in C++-owned storage that Rust has no provenance over
     // (this type is an opaque ZST marker).
-    fn DevServerSourceProvider__getSourceSlice(
+    fn DevServerSourceProvider__getSourceSlice_out(
         this: *const DevServerSourceProvider,
-    ) -> bun_core::String;
+        out: *mut bun_core::String,
+    );
     fn DevServerSourceProvider__getSourceMapJSON(
         this: *const DevServerSourceProvider,
     ) -> DevServerSourceMapData;
@@ -526,7 +537,9 @@ impl DevServerSourceProvider {
     pub fn get_source_slice(&self) -> bun_core::String {
         // SAFETY: opaque FFI handle; address-only pass-through, callee does not
         // write Rust-visible memory.
-        unsafe { DevServerSourceProvider__getSourceSlice(self) }
+        let mut out = bun_core::String::default();
+        unsafe { DevServerSourceProvider__getSourceSlice_out(self, &mut out) };
+        out
     }
     pub fn get_source_map_json_raw(&self) -> DevServerSourceMapData {
         // SAFETY: opaque FFI handle; address-only pass-through, callee does not
