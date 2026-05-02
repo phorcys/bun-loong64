@@ -18,7 +18,7 @@ import { clangTargetArch } from "./tools.ts";
 import { cyan, dim, green } from "./tty.ts";
 
 export type OS = "linux" | "darwin" | "windows" | "freebsd";
-export type Arch = "x64" | "aarch64";
+export type Arch = "x64" | "aarch64" | "loongarch64";
 export type Abi = "gnu" | "musl" | "android";
 export type BuildType = "Debug" | "Release" | "RelWithDebInfo" | "MinSizeRel";
 export type BuildMode = "full" | "cpp-only" | "rust-only" | "link-only";
@@ -88,6 +88,7 @@ export interface Config {
   kqueue: boolean;
   x64: boolean;
   arm64: boolean;
+  loongarch64: boolean;
 
   /**
    * What's running the build. Differs from os/arch/windows (target) in
@@ -700,6 +701,7 @@ export function resolveConfig(partial: PartialConfig, toolchain: Toolchain): Con
   const kqueue = darwin || freebsd;
   const x64 = arch === "x64";
   const arm64 = arch === "aarch64";
+  const loongarch64 = arch === "loongarch64";
   // Darwin target on a non-darwin host (Linux CI box building macOS
   // binaries). Same host-clang + --target/-isysroot model as Android/FreeBSD,
   // with ld64.lld doing the Mach-O link. See the cross block further down.
@@ -866,7 +868,7 @@ export function resolveConfig(partial: PartialConfig, toolchain: Toolchain): Con
   // TinyCC: off on Windows ARM64 (not supported), Android (no upstream
   // bionic support; FFI cc() falls back to dlopen-only), and FreeBSD
   // (oven-sh/tinycc has no FreeBSD target).
-  const tinycc = partial.tinycc ?? !((windows && arm64) || abi === "android" || freebsd);
+  const tinycc = partial.tinycc ?? !((windows && arm64) || abi === "android" || freebsd || loongarch64);
 
   const valgrind = partial.valgrind ?? false;
   const fuzzilli = partial.fuzzilli ?? false;
@@ -952,6 +954,13 @@ export function resolveConfig(partial: PartialConfig, toolchain: Toolchain): Con
     const llvmArch = arch === "x64" ? "x86_64" : "aarch64";
     crossTarget = `${llvmArch}-unknown-linux-android${androidApiLevel}`;
     linkNdkRuntimesIntoClang(toolchain.cc, androidNdk, host, crossTarget);
+  }
+
+  // ─── Cross-compilation (Linux GNU LoongArch64) ───
+  // Debian's cross toolchain is enough for clang to discover crt, libgcc,
+  // libstdc++, and libc when passed --target without --sysroot.
+  if (linux && abi === "gnu" && loongarch64 && host.arch !== "loongarch64") {
+    crossTarget = "loongarch64-unknown-linux-gnu";
   }
 
   // ─── Cross-compilation (FreeBSD) ───
@@ -1113,6 +1122,7 @@ export function resolveConfig(partial: PartialConfig, toolchain: Toolchain): Con
     kqueue,
     x64,
     arm64,
+    loongarch64,
     host,
     exeSuffix,
     objSuffix,

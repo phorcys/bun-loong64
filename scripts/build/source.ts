@@ -1142,6 +1142,10 @@ function emitNestedCmake(
     args.push(`-DCMAKE_EXE_LINKER_FLAGS=--ld-path=${cfg.ld}`);
     args.push(`-DCMAKE_SHARED_LINKER_FLAGS=--ld-path=${cfg.ld}`);
   }
+  if (cfg.linux && cfg.crossTarget !== undefined && cfg.abi === "gnu") {
+    args.push(`-DCMAKE_SYSTEM_NAME=Linux`);
+    args.push(`-DCMAKE_SYSTEM_PROCESSOR=${cfg.loongarch64 ? "loongarch64" : cfg.arm64 ? "aarch64" : "x86_64"}`);
+  }
   if (cfg.windows) {
     // Windows-specific toolchain forwarding. When CMAKE_C_COMPILER is
     // an explicit path, cmake's find_program for the supporting tools

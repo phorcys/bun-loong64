@@ -15,6 +15,12 @@
 
 #include <bit>
 
+#if !ENABLE(JIT)
+namespace JSC::LLInt {
+void setEntrypoint(CodeBlock*);
+}
+#endif
+
 namespace Bun {
 using namespace NodeVM;
 
@@ -164,6 +170,7 @@ constructScript(JSGlobalObject* globalObject, CallFrame* callFrame, JSValue newT
                 codeBlock = JSC::ProgramCodeBlock::create(vm, executable, unlinkedBlock, jsScope);
                 RETURN_IF_EXCEPTION(scope, {});
             }
+#if ENABLE(JIT)
             JSC::CompilationResult compilationResult = JIT::compileSync(vm, codeBlock, JITCompilationEffort::JITCompilationCanFail);
             if (compilationResult != JSC::CompilationResult::CompilationFailed) {
                 executable->installCode(codeBlock);
@@ -171,6 +178,11 @@ constructScript(JSGlobalObject* globalObject, CallFrame* callFrame, JSValue newT
             } else {
                 script->cachedDataRejected(TriState::True);
             }
+#else
+            JSC::LLInt::setEntrypoint(codeBlock);
+            executable->installCode(codeBlock);
+            script->cachedDataRejected(TriState::False);
+#endif
         }
     } else if (produceCachedData) {
         script->cacheBytecode();

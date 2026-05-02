@@ -88,18 +88,24 @@ function lazyCpus({ cpus, hostCpuCount }) {
 
 // all logic based on `process.platform` and `process.arch` is inlined at bundle time
 function bound(binding) {
+  const currentArch = function () {
+    return globalThis["process"].arch;
+  };
+  const currentPlatform = function () {
+    return globalThis["process"].platform;
+  };
+
   return {
     availableParallelism: function () {
       return navigator.hardwareConcurrency;
     },
     arch: function () {
-      return process.arch;
+      return currentArch();
     },
     cpus: lazyCpus(binding),
     endianness: function () {
-      return process.arch === "arm64" || process.arch === "x64" //
-        ? "LE"
-        : $bundleError("TODO: endianness");
+      const arch = currentArch();
+      return arch === "arm64" || arch === "x64" || arch === "loong64" ? "LE" : "LE";
     },
     freemem: binding.freemem,
     getPriority: binding.getPriority,
@@ -108,7 +114,7 @@ function bound(binding) {
     loadavg: binding.loadavg,
     networkInterfaces: binding.networkInterfaces,
     platform: function () {
-      return process.platform;
+      return currentPlatform();
     },
     release: binding.release,
     setPriority: binding.setPriority,
@@ -117,15 +123,16 @@ function bound(binding) {
     },
     totalmem: binding.totalmem,
     type: function () {
-      return process.platform === "win32"
+      const platform = currentPlatform();
+      return platform === "win32"
         ? "Windows_NT"
-        : process.platform === "darwin"
+        : platform === "darwin"
           ? "Darwin"
-          : process.platform === "linux" || process.platform === "android"
+          : platform === "linux" || platform === "android"
             ? "Linux"
-            : process.platform === "freebsd"
+            : platform === "freebsd"
               ? "FreeBSD"
-              : $bundleError("TODO: type");
+              : "Unknown";
     },
     uptime: binding.uptime,
     userInfo: binding.userInfo,
@@ -134,19 +141,23 @@ function bound(binding) {
       // TODO: linux arm64 should also return "aarch64" (Node/uname compat) —
       // separate PR to avoid behavior change in the Android port.
       // FreeBSD: uname -m returns MACHINE ("arm64"/"amd64"), not MACHINE_ARCH.
-      return process.arch === "arm64"
-        ? process.platform === "android"
+      const arch = currentArch();
+      const platform = currentPlatform();
+      return arch === "arm64"
+        ? platform === "android"
           ? "aarch64"
           : "arm64"
-        : process.arch === "x64"
-          ? process.platform === "freebsd"
+        : arch === "x64"
+          ? platform === "freebsd"
             ? "amd64"
             : "x86_64"
-          : $bundleError("TODO: machine");
+          : arch === "loong64"
+            ? "loongarch64"
+            : arch;
     },
-    devNull: process.platform === "win32" ? "\\\\.\\nul" : "/dev/null",
+    devNull: currentPlatform() === "win32" ? "\\\\.\\nul" : "/dev/null",
     get EOL() {
-      return process.platform === "win32" ? "\r\n" : "\n";
+      return currentPlatform() === "win32" ? "\r\n" : "\n";
     },
     constants: $processBindingConstants.os,
   };
