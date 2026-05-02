@@ -1,5 +1,7 @@
 #pragma once
 
+#if ENABLE(WEBASSEMBLY)
+
 #include "JSDOMWrapper.h"
 #include "JavaScriptCore/WasmStreamingCompiler.h"
 #include <wtf/NeverDestroyed.h>
@@ -71,3 +73,5 @@ template<> struct JSDOMWrapperConverterTraits<JSC::Wasm::StreamingCompiler> {
 };
 
 } // namespace WebCore
+
+#endif

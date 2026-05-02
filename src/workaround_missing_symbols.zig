@@ -1,4 +1,5 @@
 pub const linux = struct {
+    const use_libc_stat = bun.Environment.isLoongArch64;
 
     // On linux, bun overrides the libc symbols for various functions.
     // This is to compensate for older glibc versions.
@@ -10,32 +11,52 @@ pub const linux = struct {
         return if (signed > -4096 and signed < 0) -1 else int;
     }
 
-    pub export fn stat(path: [*:0]const u8, buf: *std.os.linux.Stat) c_int {
-        // https://git.musl-libc.org/cgit/musl/tree/src/stat/stat.c
-        const rc = std.os.linux.fstatat(std.os.linux.AT.FDCWD, path, buf, 0);
-        return simulateLibcErrno(rc);
-    }
+    pub const stat = if (use_libc_stat) blk: {
+        const T = *const fn ([*:0]const u8, *std.os.linux.Stat) callconv(.c) c_int;
+        break :blk @extern(T, .{ .name = "stat" });
+    } else struct {
+        pub export fn stat(path: [*:0]const u8, buf: *std.os.linux.Stat) c_int {
+            // https://git.musl-libc.org/cgit/musl/tree/src/stat/stat.c
+            const rc = std.os.linux.fstatat(std.os.linux.AT.FDCWD, path, buf, 0);
+            return simulateLibcErrno(rc);
+        }
+    }.stat;
 
     pub const stat64 = stat;
     pub const lstat64 = lstat;
     pub const fstat64 = fstat;
     pub const fstatat64 = fstatat;
 
-    pub export fn lstat(path: [*:0]const u8, buf: *std.os.linux.Stat) c_int {
-        // https://git.musl-libc.org/cgit/musl/tree/src/stat/lstat.c
-        const rc = std.os.linux.fstatat(std.os.linux.AT.FDCWD, path, buf, std.os.linux.AT.SYMLINK_NOFOLLOW);
-        return simulateLibcErrno(rc);
-    }
+    pub const lstat = if (use_libc_stat) blk: {
+        const T = *const fn ([*:0]const u8, *std.os.linux.Stat) callconv(.c) c_int;
+        break :blk @extern(T, .{ .name = "lstat" });
+    } else struct {
+        pub export fn lstat(path: [*:0]const u8, buf: *std.os.linux.Stat) c_int {
+            // https://git.musl-libc.org/cgit/musl/tree/src/stat/lstat.c
+            const rc = std.os.linux.fstatat(std.os.linux.AT.FDCWD, path, buf, std.os.linux.AT.SYMLINK_NOFOLLOW);
+            return simulateLibcErrno(rc);
+        }
+    }.lstat;
 
-    pub export fn fstat(fd: c_int, buf: *std.os.linux.Stat) c_int {
-        const rc = std.os.linux.fstat(fd, buf);
-        return simulateLibcErrno(rc);
-    }
+    pub const fstat = if (use_libc_stat) blk: {
+        const T = *const fn (c_int, *std.os.linux.Stat) callconv(.c) c_int;
+        break :blk @extern(T, .{ .name = "fstat" });
+    } else struct {
+        pub export fn fstat(fd: c_int, buf: *std.os.linux.Stat) c_int {
+            const rc = std.os.linux.fstat(fd, buf);
+            return simulateLibcErrno(rc);
+        }
+    }.fstat;
 
-    pub export fn fstatat(dirfd: i32, path: [*:0]const u8, buf: *std.os.linux.Stat, flags: u32) c_int {
-        const rc = std.os.linux.fstatat(dirfd, path, buf, flags);
-        return simulateLibcErrno(rc);
-    }
+    pub const fstatat = if (use_libc_stat) blk: {
+        const T = *const fn (i32, [*:0]const u8, *std.os.linux.Stat, u32) callconv(.c) c_int;
+        break :blk @extern(T, .{ .name = "fstatat" });
+    } else struct {
+        pub export fn fstatat(dirfd: i32, path: [*:0]const u8, buf: *std.os.linux.Stat, flags: u32) c_int {
+            const rc = std.os.linux.fstatat(dirfd, path, buf, flags);
+            return simulateLibcErrno(rc);
+        }
+    }.fstatat;
 
     pub export fn statx(dirfd: i32, path: [*:0]const u8, flags: u32, mask: u32, buf: *std.os.linux.Statx) c_int {
         const rc = std.os.linux.statx(dirfd, path, flags, mask, buf);
@@ -53,10 +74,12 @@ pub const linux = struct {
         _ = fstat64;
         _ = fstatat;
         _ = statx;
-        @export(&stat, .{ .name = "stat64" });
-        @export(&lstat, .{ .name = "lstat64" });
-        @export(&fstat, .{ .name = "fstat64" });
-        @export(&fstatat, .{ .name = "fstatat64" });
+        if (!use_libc_stat) {
+            @export(&stat, .{ .name = "stat64" });
+            @export(&lstat, .{ .name = "lstat64" });
+            @export(&fstat, .{ .name = "fstat64" });
+            @export(&fstatat, .{ .name = "fstatat64" });
+        }
     }
 };
 pub const darwin = struct {

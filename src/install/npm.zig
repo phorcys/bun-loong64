@@ -729,6 +729,7 @@ pub const Architecture = enum(u16) {
     pub const ia32: u16 = 1 << 3;
     pub const mips: u16 = 1 << 4;
     pub const mipsel: u16 = 1 << 5;
+    pub const loong64: u16 = 1 << 12;
     pub const ppc: u16 = 1 << 6;
     pub const ppc64: u16 = 1 << 7;
     pub const s390: u16 = 1 << 8;
@@ -736,16 +737,18 @@ pub const Architecture = enum(u16) {
     pub const x32: u16 = 1 << 10;
     pub const x64: u16 = 1 << 11;
 
-    pub const all_value: u16 = arm | arm64 | ia32 | mips | mipsel | ppc | ppc64 | s390 | s390x | x32 | x64;
+    pub const all_value: u16 = arm | arm64 | ia32 | mips | mipsel | loong64 | ppc | ppc64 | s390 | s390x | x32 | x64;
 
     pub const current: Architecture = switch (Environment.arch) {
         .arm64 => @enumFromInt(arm64),
+        .loongarch64 => @enumFromInt(loong64),
         .x64 => @enumFromInt(x64),
         .wasm => @compileError("Specify architecture: " ++ Environment.arch),
     };
 
     pub const current_name = switch (Environment.arch) {
         .arm64 => "arm64",
+        .loongarch64 => "loong64",
         .x64 => "x64",
         .wasm => @compileError("Unsupported architecture: " ++ @tagName(current)),
     };
@@ -754,6 +757,8 @@ pub const Architecture = enum(u16) {
         .{ "arm", arm },
         .{ "arm64", arm64 },
         .{ "ia32", ia32 },
+        .{ "loong64", loong64 },
+        .{ "loongarch64", loong64 },
         .{ "mips", mips },
         .{ "mipsel", mipsel },
         .{ "ppc", ppc },

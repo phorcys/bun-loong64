@@ -76,7 +76,7 @@ function systemLibs(cfg: Config): string[] {
     // Linux local WebKit: link system ICU (prebuilt bundles its own).
     // Assumes system ICU is in default lib paths — true on most distros.
     // Android: no system ICU; the local WebKit build must bundle it.
-    if (cfg.webkit === "local" && cfg.abi !== "android") {
+    if (cfg.webkit === "local" && cfg.abi !== "android" && !(cfg.linux && cfg.loongarch64)) {
       libs.push("-licudata", "-licui18n", "-licuuc");
     }
   }

@@ -20,6 +20,12 @@
 
 #include "../vm/SigintWatcher.h"
 
+#if !ENABLE(JIT)
+namespace JSC::LLInt {
+void setEntrypoint(CodeBlock*);
+}
+#endif
+
 namespace Bun {
 using namespace NodeVM;
 
@@ -140,12 +146,18 @@ NodeVMSourceTextModule* NodeVMSourceTextModule::create(VM& vm, JSGlobalObject* g
             RETURN_IF_EXCEPTION(scope, nullptr);
         }
         if (codeBlock) {
+#if ENABLE(JIT)
             CompilationResult compilationResult = JIT::compileSync(vm, codeBlock, JITCompilationEffort::JITCompilationCanFail);
             RETURN_IF_EXCEPTION(scope, nullptr);
             if (compilationResult != CompilationResult::CompilationFailed) {
                 executable->installCode(codeBlock);
                 return ptr;
             }
+#else
+            LLInt::setEntrypoint(codeBlock);
+            executable->installCode(codeBlock);
+            return ptr;
+#endif
         }
     }
 

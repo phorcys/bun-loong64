@@ -108,7 +108,7 @@ function codegenTarget(cfg: Config): { platform: string; arch: string } {
           : cfg.os === "freebsd"
             ? "freebsd"
             : "linux";
-  const arch = cfg.x64 ? "x64" : "arm64";
+  const arch = cfg.loongarch64 ? "loong64" : cfg.x64 ? "x64" : "arm64";
   return { platform, arch };
 }
 

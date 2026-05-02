@@ -23,6 +23,7 @@ pub const isKqueue = isMac or isFreeBSD;
 pub const isAarch64 = builtin.target.cpu.arch.isAARCH64();
 pub const isX86 = builtin.target.cpu.arch.isX86();
 pub const isX64 = builtin.target.cpu.arch == .x86_64;
+pub const isLoongArch64 = builtin.target.cpu.arch == .loongarch64;
 pub const isMusl = builtin.target.abi.isMusl();
 pub const isAndroid = builtin.target.abi.isAndroid();
 pub const isGlibc = isLinux and builtin.target.abi.isGnu();
@@ -158,6 +159,7 @@ else
 pub const Architecture = enum {
     x64,
     arm64,
+    loongarch64,
     wasm,
 
     /// npm package name, `@oven-sh/bun-{os}-{arch}`
@@ -165,6 +167,7 @@ pub const Architecture = enum {
         return switch (this) {
             .x64 => "x64",
             .arm64 => "aarch64",
+            .loongarch64 => "loongarch64",
             .wasm => "wasm",
         };
     }
@@ -175,6 +178,8 @@ pub const Architecture = enum {
         .{ "amd64", .x64 },
         .{ "aarch64", .arm64 },
         .{ "arm64", .arm64 },
+        .{ "loongarch64", .loongarch64 },
+        .{ "loong64", .loongarch64 },
         .{ "wasm", .wasm },
     });
 };
@@ -185,6 +190,8 @@ else if (isX64)
     .x64
 else if (isAarch64)
     .arm64
+else if (isLoongArch64)
+    .loongarch64
 else
     @compileError("Please add your architecture to the Architecture enum");
 
