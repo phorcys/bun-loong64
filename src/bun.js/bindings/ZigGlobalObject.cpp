@@ -306,10 +306,32 @@ extern "C" void JSCInitialize(const char* envp[], size_t envc, void (*onCrash)(c
 #else
             JSC::Options::useJIT() = false;
 #endif
+#if ENABLE(DFG_JIT)
+            JSC::Options::useDFGJIT() = true;
+#else
+            JSC::Options::useDFGJIT() = false;
+#endif
+#if ENABLE(FTL_JIT)
+            JSC::Options::useFTLJIT() = true;
+#else
+            JSC::Options::useFTLJIT() = false;
+#endif
 #if ENABLE(WEBASSEMBLY_BBQJIT)
             JSC::Options::useBBQJIT() = true;
 #else
             JSC::Options::useBBQJIT() = false;
+#endif
+#if ENABLE(WEBASSEMBLY)
+            JSC::Options::useWasmIPInt() = true;
+            JSC::Options::useWasmIPIntSIMD() = true;
+#else
+            JSC::Options::useWasmIPInt() = false;
+            JSC::Options::useWasmIPIntSIMD() = false;
+#endif
+#if ENABLE(WEBASSEMBLY_OMGJIT)
+            JSC::Options::useOMGJIT() = true;
+#else
+            JSC::Options::useOMGJIT() = false;
 #endif
 #if ENABLE(JIT)
             JSC::Options::useConcurrentJIT() = true;

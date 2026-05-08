@@ -204,7 +204,7 @@ export function zigOptimize(cfg: Config): "Debug" | "ReleaseFast" | "ReleaseSafe
  *
  * arm64: apple_m1 (darwin), cortex_a76 (windows — no ARMv9 windows yet),
  *   native (linux — no baseline arm64 builds needed).
- * loongarch64: baseline generic model for cross-compilation.
+ * loongarch64: LA64 v1.1 baseline, matching the JSC port's atomic assumptions.
  * x64: nehalem (baseline, pre-AVX), haswell (AVX2).
  */
 export function zigCpu(cfg: Config): string {
@@ -213,7 +213,7 @@ export function zigCpu(cfg: Config): string {
     if (cfg.windows) return "cortex_a76";
     return "native";
   }
-  if (cfg.loongarch64) return "baseline";
+  if (cfg.loongarch64) return "la64v1_1";
   // x64
   return cfg.baseline ? "nehalem" : "haswell";
 }
