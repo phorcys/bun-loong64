@@ -1,6 +1,5 @@
 #if defined(__loongarch__)
 #define SIMDUTF_IMPLEMENTATION_LASX 0
-#define SIMDUTF_IMPLEMENTATION_LSX 0
 #endif
 
 #include "wtf/SIMDUTF.h"

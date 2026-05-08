@@ -68,6 +68,11 @@ export const cpuTargetFlags: Flag[] = [
     desc: "ARM64 Windows: clang-cl prefix required (/clang: passes to clang)",
   },
   {
+    flag: "-march=la64v1.1",
+    when: c => c.loongarch64,
+    desc: "LoongArch64 v1.1: enables modern atomics and LSX baseline expected by the JSC port",
+  },
+  {
     flag: "-march=nehalem",
     when: c => c.x64 && c.baseline,
     desc: "x64 baseline: Nehalem (2008) — no AVX, broadest compatibility",

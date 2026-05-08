@@ -3536,12 +3536,13 @@ private:
         ptr += length * sizeof(char16_t);
 #else
         std::span<char16_t> characters;
-        str = String::createUninitialized(length, characters);
+        auto string = String::createUninitialized(length, characters);
         for (unsigned i = 0; i < length; ++i) {
             uint16_t c;
             readLittleEndian(ptr, end, c);
             characters[i] = c;
         }
+        str = Identifier::fromString(vm, string);
 #endif
         return true;
     }
