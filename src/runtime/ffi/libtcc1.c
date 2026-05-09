@@ -47,7 +47,11 @@ typedef union
   DWtype ll;
 } DWunion;
 
+#ifdef __loongarch64
+typedef double XFtype;
+#else
 typedef long double XFtype;
+#endif
 #define WORD_SIZE (sizeof (Wtype) * BITS_PER_UNIT)
 #define HIGH_WORD_COEFF (((UDWtype) 1) << WORD_SIZE)
 
@@ -103,14 +107,15 @@ union double_long {
 
 union float_long {
     float f;
-    long l;
+    unsigned int l;
 };
 
 /* XXX: we don't support several builtin supports for now */
-#ifndef __x86_64__
+#if !defined __x86_64__ && !defined __arm__ && !defined __riscv && \
+    !defined __loongarch64
 
 /* XXX: use gcc/tcc intrinsic ? */
-#if defined(__i386__)
+#if defined __i386__
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
   __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
 	   : "=r" ((USItype) (sh)),					\
@@ -162,7 +167,7 @@ static UDWtype __udivmoddi4 (UDWtype n, UDWtype d, UDWtype *rp)
   n0 = nn.s.low;
   n1 = nn.s.high;
 
-#if !UDIV_NEEDS_NORMALIZATION
+#if !defined(UDIV_NEEDS_NORMALIZATION)
   if (d1 == 0)
     {
       if (d0 > n1)
@@ -478,13 +483,6 @@ long long __ashldi3(long long a, int b)
 #endif
 }
 
-#if defined(__i386__)
-/* FPU control word for rounding to nearest mode */
-unsigned short __tcc_fpu_control = 0x137f;
-/* FPU control word for round to zero mode for int conversion */
-unsigned short __tcc_int_fpu_control = 0x137f | 0x0c00;
-#endif
-
 #endif /* !__x86_64__ */
 
 /* XXX: fix tcc's code generator to do this instead */
@@ -518,6 +516,7 @@ double __floatundidf(unsigned long long a)
     }
 }
 
+#ifndef __loongarch64
 long double __floatundixf(unsigned long long a)
 {
     DWunion uu; 
@@ -532,12 +531,13 @@ long double __floatundixf(unsigned long long a)
         return (long double)r;
     }
 }
+#endif
 
 unsigned long long __fixunssfdi (float a1)
 {
     register union float_long fl1;
     register int exp;
-    register unsigned long l;
+    register unsigned long long l;
 
     fl1.f = a1;
 
@@ -545,16 +545,26 @@ unsigned long long __fixunssfdi (float a1)
 	return (0);
 
     exp = EXP (fl1.l) - EXCESS - 24;
-
     l = MANT(fl1.l);
+
     if (exp >= 41)
-	return (unsigned long long)-1;
+        return 1ULL << 63;
     else if (exp >= 0)
-        return (unsigned long long)l << exp;
+        l <<= exp;
     else if (exp >= -23)
-        return l >> -exp;
+        l >>= -exp;
     else
-        return 0;
+	return 0;
+    if (SIGN(fl1.l))
+        l = (unsigned long long)-l;
+    return l;
+}
+
+long long __fixsfdi (float a1)
+{
+    long long ret; int s;
+    ret = __fixunssfdi((s = a1 >= 0) ? a1 : -a1);
+    return s ? ret : -ret;
 }
 
 unsigned long long __fixunsdfdi (double a1)
@@ -569,19 +579,29 @@ unsigned long long __fixunsdfdi (double a1)
 	return (0);
 
     exp = EXPD (dl1) - EXCESSD - 53;
-
     l = MANTD_LL(dl1);
 
     if (exp >= 12)
-	return (unsigned long long)-1;
+        return 1ULL << 63; /* overflow result (like gcc, somewhat) */
     else if (exp >= 0)
-        return l << exp;
+        l <<= exp;
     else if (exp >= -52)
-        return l >> -exp;
+        l >>= -exp;
     else
         return 0;
+    if (SIGND(dl1))
+        l = (unsigned long long)-l;
+    return l;
 }
 
+long long __fixdfdi (double a1)
+{
+    long long ret; int s;
+    ret = __fixunsdfdi((s = a1 >= 0) ? a1 : -a1);
+    return s ? ret : -ret;
+}
+
+#if !defined __arm__ && !defined __loongarch64
 unsigned long long __fixunsxfdi (long double a1)
 {
     register union ldouble_long dl1;
@@ -594,13 +614,35 @@ unsigned long long __fixunsxfdi (long double a1)
 	return (0);
 
     exp = EXPLD (dl1) - EXCESSLD - 64;
-
     l = dl1.l.lower;
-
     if (exp > 0)
-	return (unsigned long long)-1;
-    else if (exp >= -63) 
-        return l >> -exp;
-    else
+	return 1ULL << 63;
+    if (exp < -63)
         return 0;
+    l >>= -exp;
+    if (SIGNLD(dl1))
+        l = (unsigned long long)-l;
+    return l;
 }
+
+long long __fixxfdi (long double a1)
+{
+    long long ret; int s;
+    ret = __fixunsxfdi((s = a1 >= 0) ? a1 : -a1);
+    return s ? ret : -ret;
+}
+#endif /* !ARM && !loongarch64 */
+
+#if defined __x86_64__
+/* float constants used for unary minus operation */
+const float __mzerosf = -0.0;
+const double __mzerodf = -0.0;
+#endif
+
+#if defined _WIN64
+/* MSVC x64 intrinsic */
+void __faststorefence(void)
+{
+    __asm__("lock; orl $0,(%rsp)");
+}
+#endif

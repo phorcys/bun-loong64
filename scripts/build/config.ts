@@ -868,7 +868,7 @@ export function resolveConfig(partial: PartialConfig, toolchain: Toolchain): Con
   // TinyCC: off on Windows ARM64 (not supported), Android (no upstream
   // bionic support; FFI cc() falls back to dlopen-only), and FreeBSD
   // (oven-sh/tinycc has no FreeBSD target).
-  const tinycc = partial.tinycc ?? !((windows && arm64) || abi === "android" || freebsd || loongarch64);
+  const tinycc = partial.tinycc ?? !((windows && arm64) || abi === "android" || freebsd);
 
   const valgrind = partial.valgrind ?? false;
   const fuzzilli = partial.fuzzilli ?? false;
