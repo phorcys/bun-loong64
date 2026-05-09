@@ -1799,6 +1799,13 @@ pub const FFI = struct {
                                 },
                             );
                         }
+
+                        if (arg != .napi_value) {
+                            var converted_arg_buf: [32]u8 = undefined;
+                            const converted_arg_name = try std.fmt.bufPrint(&converted_arg_buf, "arg{d}", .{i});
+                            try arg.typename(writer);
+                            try writer.print(" arg{d}_c = {f};\n", .{ i, arg.toC(converted_arg_name) });
+                        }
                     } else {
                         if (i < this.arg_types.items.len - 1) {
                             try writer.print(
@@ -1847,7 +1854,11 @@ pub const FFI = struct {
                 const lengthBuf = std.fmt.printInt(arg_buf["arg".len..], i, 10, .lower, .{});
                 const argName = arg_buf[0 .. 3 + lengthBuf];
                 if (arg.needsACastInC()) {
-                    try writer.print("{f}", .{arg.toC(argName)});
+                    if (arg == .napi_value) {
+                        try writer.print("{f}", .{arg.toC(argName)});
+                    } else {
+                        try writer.print("{s}_c", .{argName});
+                    }
                 } else {
                     try writer.writeAll(argName);
                 }
@@ -2392,7 +2403,7 @@ const CompilerRT = struct {
     }
 
     pub fn define(state: *TCC.State) void {
-        if (comptime Environment.isX64) {
+        if (comptime Environment.isX64 or Environment.isLoongArch64) {
             state.defineSymbol("NEEDS_COMPILER_RT_FUNCTIONS", "1");
             state.compileString(@embedFile(("libtcc1.c"))) catch {
                 if (bun.Environment.isDebug) {

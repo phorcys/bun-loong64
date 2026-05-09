@@ -2,8 +2,7 @@
  * TinyCC — small embeddable C compiler. Powers bun:ffi's JIT-compile path,
  * where user-provided C gets compiled and linked at runtime.
  *
- * Disabled on windows-arm64 (tinycc doesn't have an arm64-coff backend) and
- * loongarch64 (tinycc doesn't have a LoongArch backend).
+ * Disabled on windows-arm64 (tinycc doesn't have an arm64-coff backend).
  *
  * Built via DirectBuild — no cmake sub-process. The old overlay
  * CMakeLists.txt had two recurring ASAN workarounds for the c2str host
@@ -13,7 +12,7 @@
 
 import type { Dependency, DirectBuild } from "../source.ts";
 
-const TINYCC_COMMIT = "12882eee073cfe5c7621bcfadf679e1372d4537b";
+const TINYCC_COMMIT = "276c5d9359d1fc75cf172648635a7d35451d37bc";
 
 export const tinycc: Dependency = {
   name: "tinycc",
@@ -25,7 +24,7 @@ export const tinycc: Dependency = {
 
   source: () => ({
     kind: "github-archive",
-    repo: "oven-sh/tinycc",
+    repo: "phorcys/tinycc",
     commit: TINYCC_COMMIT,
   }),
 
@@ -33,7 +32,8 @@ export const tinycc: Dependency = {
 
   build: cfg => {
     const sources = ["libtcc.c", "tccpp.c", "tccgen.c", "tccdbg.c", "tccelf.c", "tccasm.c", "tccrun.c"];
-    if (cfg.arm64) sources.push("arm64-gen.c", "arm64-link.c", "arm64-asm.c");
+    if (cfg.loongarch64) sources.push("loongarch64-gen.c", "loongarch64-link.c", "loongarch64-asm.c");
+    else if (cfg.arm64) sources.push("arm64-gen.c", "arm64-link.c", "arm64-asm.c");
     else sources.push("x86_64-gen.c", "x86_64-link.c", "i386-asm.c");
     if (cfg.darwin) sources.push("tccmacho.c");
     if (cfg.windows) sources.push("tccpe.c");
@@ -59,6 +59,7 @@ export const tinycc: Dependency = {
       // driver) so we leave it at the default.
     }
     if (cfg.windows) defines.CONFIG_WIN32 = true;
+    if (cfg.loongarch64) defines.TCC_TARGET_LOONGARCH64 = true;
 
     const spec: DirectBuild = {
       kind: "direct",
