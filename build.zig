@@ -738,7 +738,8 @@ fn getTranslateC(b: *Build, initial_target: std.Build.ResolvedTarget, optimize: 
     translate_c.addIncludePath(b.path("vendor/zstd/lib"));
 
     if (target.result.os.tag == .linux and target.result.cpu.arch == .loongarch64) {
-        translate_c.addSystemIncludePath(.{ .cwd_relative = "/usr/loongarch64-linux-gnu/include" });
+        translate_c.addSystemIncludePath(.{ .cwd_relative = "/usr/include" });
+        translate_c.addSystemIncludePath(.{ .cwd_relative = "/usr/include/loongarch64-linux-gnu" });
     }
 
     if (target.result.abi.isAndroid()) {

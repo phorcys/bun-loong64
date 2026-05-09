@@ -360,14 +360,21 @@ export function detectHost(): Host {
                 });
               })();
 
-  const a = hostArch();
+  // On LoongArch64 systems running through an x64 compatibility layer,
+  // node:os.arch() reports the emulated architecture. Use uname on Linux
+  // so native builds target the real machine.
+  const a = os === "linux" ? execSync("uname -m", { encoding: "utf-8" }).trim() : hostArch();
   const arch: Arch =
-    a === "x64"
+    a === "x64" || a === "x86_64"
       ? "x64"
-      : a === "arm64"
+      : a === "arm64" || a === "aarch64"
         ? "aarch64"
+        : a === "loong64" || a === "loongarch64"
+          ? "loongarch64"
         : (() => {
-            throw new BuildError(`Unsupported host architecture: ${a}`, { hint: "Bun builds on x64 or arm64" });
+            throw new BuildError(`Unsupported host architecture: ${a}`, {
+              hint: "Bun builds on x64, arm64, or loong64",
+            });
           })();
 
   return { os, arch, exeSuffix: os === "windows" ? ".exe" : "" };

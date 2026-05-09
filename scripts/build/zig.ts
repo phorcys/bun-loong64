@@ -118,12 +118,12 @@ function crossLibcArgs(cfg: Config): string[] {
     writeIfChanged(
       libcFile,
       [
-        `include_dir=/usr/loongarch64-linux-gnu/include`,
-        `sys_include_dir=/usr/loongarch64-linux-gnu/include`,
-        `crt_dir=/usr/loongarch64-linux-gnu/lib`,
+        `include_dir=/usr/include`,
+        `sys_include_dir=/usr/include/loongarch64-linux-gnu`,
+        `crt_dir=/usr/lib/loongarch64-linux-gnu`,
         `msvc_lib_dir=`,
         `kernel32_lib_dir=`,
-        `gcc_dir=/usr/lib/gcc-cross/loongarch64-linux-gnu/15`,
+        `gcc_dir=/usr/lib/gcc/loongarch64-linux-gnu/15`,
         ``,
       ].join("\n"),
     );
@@ -204,7 +204,6 @@ export function zigOptimize(cfg: Config): "Debug" | "ReleaseFast" | "ReleaseSafe
  *
  * arm64: apple_m1 (darwin), cortex_a76 (windows — no ARMv9 windows yet),
  *   native (linux — no baseline arm64 builds needed).
- * loongarch64: LA64 v1.1 baseline, matching the JSC port's atomic assumptions.
  * x64: nehalem (baseline, pre-AVX), haswell (AVX2).
  */
 export function zigCpu(cfg: Config): string {
@@ -213,7 +212,7 @@ export function zigCpu(cfg: Config): string {
     if (cfg.windows) return "cortex_a76";
     return "native";
   }
-  if (cfg.loongarch64) return "la64v1_1";
+  if (cfg.loongarch64) return "la664";
   // x64
   return cfg.baseline ? "nehalem" : "haswell";
 }

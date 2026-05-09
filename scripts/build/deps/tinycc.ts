@@ -12,7 +12,7 @@
 
 import type { Dependency, DirectBuild } from "../source.ts";
 
-const TINYCC_COMMIT = "276c5d9359d1fc75cf172648635a7d35451d37bc";
+const TINYCC_COMMIT = "924612d29a8c73e485100a34fdd6a92dc065178f";
 
 export const tinycc: Dependency = {
   name: "tinycc",

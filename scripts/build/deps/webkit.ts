@@ -153,15 +153,16 @@ function localIcuLibs(cfg: Config): string[] {
 }
 
 function loongarch64IcuRoot(cfg: Config): string {
-  return process.env.BUN_LOONGARCH64_ICU_ROOT ?? resolve(cfg.cwd, "build", "icu-loongarch64-gnu", "install");
+  return process.env.BUN_LOONGARCH64_ICU_ROOT ?? "/usr";
 }
 
 function loongarch64IcuLibs(cfg: Config): string[] {
   const root = loongarch64IcuRoot(cfg);
+  const libDir = root === "/usr" ? "/usr/lib/loongarch64-linux-gnu" : resolve(root, "lib");
   return [
-    resolve(root, "lib", "libicui18n.a"),
-    resolve(root, "lib", "libicuuc.a"),
-    resolve(root, "lib", "libicudata.a"),
+    resolve(libDir, "libicui18n.so"),
+    resolve(libDir, "libicuuc.so"),
+    resolve(libDir, "libicudata.so"),
   ];
 }
 
@@ -267,9 +268,6 @@ export const webkit: Dependency = {
     if (cfg.linux && cfg.crossTarget !== undefined && cfg.abi === "gnu") {
       optFlags.push(`--target=${cfg.crossTarget}`);
     }
-    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
-      optFlags.push("-isystem", join(loongarch64IcuRoot(cfg), "include"));
-    }
     const optFlagStr = optFlags.join(" ");
     let cxxOptFlagStr = optFlagStr;
     if (cfg.abi === "android") {
@@ -321,9 +319,9 @@ export const webkit: Dependency = {
               ? {
                   ICU_ROOT: loongarch64IcuRoot(cfg),
                   ICU_INCLUDE_DIR: join(loongarch64IcuRoot(cfg), "include"),
-                  ICU_DATA_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicudata.a"),
-                  ICU_I18N_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicui18n.a"),
-                  ICU_UC_LIBRARY: join(loongarch64IcuRoot(cfg), "lib", "libicuuc.a"),
+                  ICU_DATA_LIBRARY: loongarch64IcuLibs(cfg)[2],
+                  ICU_I18N_LIBRARY: loongarch64IcuLibs(cfg)[0],
+                  ICU_UC_LIBRARY: loongarch64IcuLibs(cfg)[1],
                   CMAKE_FIND_ROOT_PATH_MODE_PACKAGE: "BOTH",
                   CMAKE_FIND_ROOT_PATH_MODE_LIBRARY: "BOTH",
                   CMAKE_FIND_ROOT_PATH_MODE_INCLUDE: "BOTH",
