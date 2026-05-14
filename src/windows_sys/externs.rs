@@ -1565,6 +1565,7 @@ const _: () = assert!(core::mem::offset_of!(TEB, ProcessEnvironmentBlock) == 0x6
 /// ABI for every thread, so there is no caller-side obligation. The deref
 /// obligation lives with the caller of the returned `*mut TEB`.
 #[inline(always)]
+#[cfg(windows)]
 pub fn teb() -> *mut TEB {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: on Windows x64 `gs:[0x30]` is the OS-maintained TEB self-
@@ -1591,6 +1592,7 @@ pub fn teb() -> *mut TEB {
 /// `BeingDebugged`, …). Materializing a `&'static` to it would be UB under
 /// Rust's aliasing rules. Callers must read fields through raw-pointer deref.
 #[inline(always)]
+#[cfg(windows)]
 pub fn peb() -> *const PEB {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: reading `gs:[0x60]` is the documented Windows-x64 ABI for the

@@ -40,6 +40,7 @@ pub const IS_FREEBSD: bool = cfg!(target_os = "freebsd");
 /// kqueue-based event loop (macOS + FreeBSD share most of this path).
 pub const IS_KQUEUE: bool = IS_MAC || IS_FREEBSD;
 pub const IS_AARCH64: bool = cfg!(target_arch = "aarch64");
+pub const IS_LOONGARCH64: bool = cfg!(target_arch = "loongarch64");
 pub const IS_X86: bool = cfg!(any(target_arch = "x86", target_arch = "x86_64"));
 pub const IS_X64: bool = cfg!(target_arch = "x86_64");
 pub const IS_MUSL: bool = cfg!(target_env = "musl");
@@ -215,6 +216,7 @@ pub const OS_NAME_NPM: &str = OS.npm_name();
 pub enum Architecture {
     X64,
     Arm64,
+    LoongArch64,
     Wasm,
 }
 
@@ -224,6 +226,7 @@ impl Architecture {
         match self {
             Self::X64 => b"x64",
             Self::Arm64 => b"aarch64",
+            Self::LoongArch64 => b"loongarch64",
             Self::Wasm => b"wasm",
         }
     }
@@ -234,6 +237,8 @@ impl Architecture {
         b"amd64" => Architecture::X64,
         b"aarch64" => Architecture::Arm64,
         b"arm64" => Architecture::Arm64,
+        b"loongarch64" => Architecture::LoongArch64,
+        b"loong64" => Architecture::LoongArch64,
         b"wasm" => Architecture::Wasm,
     };
 }
@@ -244,6 +249,8 @@ pub const ARCH: Architecture = if IS_WASM {
     Architecture::X64
 } else if IS_AARCH64 {
     Architecture::Arm64
+} else if IS_LOONGARCH64 {
+    Architecture::LoongArch64
 } else {
     panic!("Please add your architecture to the Architecture enum")
 };

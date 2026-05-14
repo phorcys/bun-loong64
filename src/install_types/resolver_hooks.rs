@@ -949,6 +949,7 @@ impl Architecture {
     pub const S390X: u16 = 1 << 9;
     pub const X32: u16 = 1 << 10;
     pub const X64: u16 = 1 << 11;
+    pub const LOONG64: u16 = 1 << 12;
 
     pub const ALL_VALUE: u16 = Self::ARM
         | Self::ARM64
@@ -960,15 +961,20 @@ impl Architecture {
         | Self::S390
         | Self::S390X
         | Self::X32
-        | Self::X64;
+        | Self::X64
+        | Self::LOONG64;
 
     #[cfg(target_arch = "aarch64")]
     pub const CURRENT: Self = Self(Self::ARM64);
+    #[cfg(target_arch = "loongarch64")]
+    pub const CURRENT: Self = Self(Self::LOONG64);
     #[cfg(target_arch = "x86_64")]
     pub const CURRENT: Self = Self(Self::X64);
 
     #[cfg(target_arch = "aarch64")]
     pub const CURRENT_NAME: &'static str = "arm64";
+    #[cfg(target_arch = "loongarch64")]
+    pub const CURRENT_NAME: &'static str = "loong64";
     #[cfg(target_arch = "x86_64")]
     pub const CURRENT_NAME: &'static str = "x64";
 
@@ -998,6 +1004,7 @@ negatable_names! { Architecture: u16 => [
     b"arm" => ARM, b"ppc" => PPC, b"x32" => X32, b"x64" => X64,
     b"ia32" => IA32, b"mips" => MIPS, b"s390" => S390,
     b"arm64" => ARM64, b"ppc64" => PPC64, b"s390x" => S390X, b"mipsel" => MIPSEL,
+    b"loong64" => LOONG64, b"loongarch64" => LOONG64,
 ] }
 
 // ─── Repository (data) ────────────────────────────────────────────────────

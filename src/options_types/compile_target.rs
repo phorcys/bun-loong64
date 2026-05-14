@@ -488,6 +488,16 @@ impl CompileTarget {
                     OperatingSystem::Wasm => table!(b"\"wasm\"", b"\"arm64\""),
                 },
             },
+            Architecture::LoongArch64 => match self.libc {
+                Libc::Android => table!(b"\"android\"", b"\"loong64\""),
+                _ => match self.os {
+                    OperatingSystem::Mac => table!(b"\"darwin\"", b"\"loong64\""),
+                    OperatingSystem::Linux => table!(b"\"linux\"", b"\"loong64\""),
+                    OperatingSystem::Windows => table!(b"\"win32\"", b"\"loong64\""),
+                    OperatingSystem::Freebsd => table!(b"\"freebsd\"", b"\"loong64\""),
+                    OperatingSystem::Wasm => table!(b"\"wasm\"", b"\"loong64\""),
+                },
+            },
             _ => panic!("TODO"),
         }
     }

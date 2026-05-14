@@ -58,7 +58,9 @@ pub fn read_counter() -> u64 {
         return ((hi as u64) << 32) | (lo as u64);
     }
     #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
-    compile_error!("hw_timer::read_counter: unsupported architecture");
+    {
+        return os_monotonic_ns();
+    }
 }
 
 /// Monotonic nanoseconds, calibrated to the same epoch as `bun.getRoughTickCount()`.
@@ -91,8 +93,10 @@ pub fn now_ms() -> u64 {
     now_ns() / NS_PER_MS
 }
 
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 const SHIFT: u32 = 32;
 
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 #[derive(Clone, Copy)]
 struct Calibration {
     start_counter: u64,
@@ -101,6 +105,7 @@ struct Calibration {
     mult: u64,
 }
 
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 impl Default for Calibration {
     fn default() -> Self {
         Self {
@@ -115,13 +120,16 @@ impl Default for Calibration {
 // `CALIBRATE_ONCE.call_once`, which establishes happens-before for readers.
 // `RacyCell` (not `OnceLock`) because `calibrate()` may early-return without
 // writing (freq==0) yet must still mark the Once as done.
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 static CALIBRATION: bun_core::RacyCell<Calibration> = bun_core::RacyCell::new(Calibration {
     start_counter: 0,
     start_ns: 0,
     mult: 0,
 });
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 static CALIBRATE_ONCE: std::sync::Once = std::sync::Once::new();
 
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 fn calibrate() {
     let freq = read_frequency();
     if freq == 0 {
@@ -144,6 +152,7 @@ fn calibrate() {
 
 /// Counter frequency in Hz, or 0 if it can't be learned without spinning.
 /// All paths that return non-zero already imply invariant/constant-rate TSC.
+#[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 fn read_frequency() -> u64 {
     #[cfg(target_arch = "aarch64")]
     {
@@ -204,9 +213,6 @@ fn read_frequency() -> u64 {
             return 0;
         }
     }
-
-    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
-    compile_error!("hw_timer::read_frequency: unsupported target");
 }
 
 #[cfg(target_arch = "x86_64")]

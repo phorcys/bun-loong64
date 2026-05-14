@@ -2309,6 +2309,7 @@ mod draft {
         LinuxX8664 = b'l',
         LinuxX8664Baseline = b'B',
         LinuxAarch64 = b'L',
+        LinuxLoongArch64 = b'o',
 
         MacX8664Baseline = b'b',
         MacX8664 = b'm',
@@ -2353,6 +2354,13 @@ mod draft {
             ))]
             {
                 Platform::LinuxAarch64
+            }
+            #[cfg(all(
+                any(target_os = "linux", target_os = "android"),
+                target_arch = "loongarch64"
+            ))]
+            {
+                Platform::LinuxLoongArch64
             }
             #[cfg(all(target_os = "macos", target_arch = "x86_64", not(feature = "baseline")))]
             {
