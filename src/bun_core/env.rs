@@ -43,8 +43,10 @@ pub const IS_LINUX: bool = cfg!(any(target_os = "linux", target_os = "android"))
 pub(crate) const IS_FREEBSD: bool = cfg!(target_os = "freebsd");
 /// kqueue-based event loop (macOS + FreeBSD share most of this path).
 pub const IS_KQUEUE: bool = IS_MAC || IS_FREEBSD;
-pub(crate) const IS_AARCH64: bool = cfg!(target_arch = "aarch64");
-pub(crate) const IS_X64: bool = cfg!(target_arch = "x86_64");
+pub const IS_AARCH64: bool = cfg!(target_arch = "aarch64");
+pub const IS_LOONGARCH64: bool = cfg!(target_arch = "loongarch64");
+pub const IS_X86: bool = cfg!(any(target_arch = "x86", target_arch = "x86_64"));
+pub const IS_X64: bool = cfg!(target_arch = "x86_64");
 pub const IS_MUSL: bool = cfg!(target_env = "musl");
 pub const IS_ANDROID: bool = cfg!(target_os = "android");
 pub const ALLOW_ASSERT: bool = IS_DEBUG || IS_TEST || build_options::RELEASE_SAFE;
@@ -209,6 +211,7 @@ pub const OS_NAME_NPM: &str = OS.npm_name();
 pub enum Architecture {
     X64,
     Arm64,
+    LoongArch64,
     Wasm,
 }
 
@@ -218,6 +221,7 @@ impl Architecture {
         match self {
             Self::X64 => "x64",
             Self::Arm64 => "aarch64",
+            Self::LoongArch64 => "loongarch64",
             Self::Wasm => "wasm",
         }
     }
@@ -230,6 +234,8 @@ crate::comptime_string_map! {
         b"amd64" => Architecture::X64,
         b"aarch64" => Architecture::Arm64,
         b"arm64" => Architecture::Arm64,
+        b"loongarch64" => Architecture::LoongArch64,
+        b"loong64" => Architecture::LoongArch64,
         b"wasm" => Architecture::Wasm,
     };
 }
@@ -240,6 +246,8 @@ pub const ARCH: Architecture = if IS_WASM {
     Architecture::X64
 } else if IS_AARCH64 {
     Architecture::Arm64
+} else if IS_LOONGARCH64 {
+    Architecture::LoongArch64
 } else {
     panic!("Please add your architecture to the Architecture enum")
 };

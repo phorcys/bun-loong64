@@ -2330,6 +2330,13 @@ mod draft {
             {
                 b'L'
             }
+            #[cfg(all(
+                any(target_os = "linux", target_os = "android"),
+                target_arch = "loongarch64"
+            ))]
+            {
+                b'o'
+            }
             #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
             {
                 if Environment::BASELINE { b'b' } else { b'm' }

@@ -44,7 +44,21 @@ bitflags::bitflags! {
     }
 }
 
-#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+#[cfg(target_arch = "loongarch64")]
+bitflags::bitflags! {
+    #[repr(transparent)]
+    #[derive(Copy, Clone)]
+    pub struct Flags: u8 {
+        const NONE = 1 << 0;
+        // bits 1..=7 = padding
+    }
+}
+
+#[cfg(not(any(
+    target_arch = "x86_64",
+    target_arch = "aarch64",
+    target_arch = "loongarch64"
+)))]
 compile_error!("CPUFeatures: unsupported target architecture");
 
 // Per-arch const table of flag names, skipping "none" and padding bits.
@@ -66,6 +80,9 @@ const NAMED_FLAGS: &[(&str, Flags)] = &[
     ("atomics", Flags::ATOMICS),
     ("sve", Flags::SVE),
 ];
+
+#[cfg(target_arch = "loongarch64")]
+const NAMED_FLAGS: &[(&str, Flags)] = &[];
 
 impl fmt::Display for CPUFeatures {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
