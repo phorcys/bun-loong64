@@ -611,6 +611,29 @@ impl CompileC {
                         .set(bun_core::ZBox::from_vec_with_nul(b"/usr/lib64".to_vec()));
                 }
             }
+            #[cfg(target_arch = "loongarch64")]
+            {
+                if dir_exists(b"/usr/include/loongarch64-linux-gnu") {
+                    let _ =
+                        CACHED_DEFAULT_SYSTEM_INCLUDE_DIR.set(bun_core::ZBox::from_vec_with_nul(
+                            b"/usr/include/loongarch64-linux-gnu".to_vec(),
+                        ));
+                } else if dir_exists(b"/usr/include") {
+                    let _ = CACHED_DEFAULT_SYSTEM_INCLUDE_DIR
+                        .set(bun_core::ZBox::from_vec_with_nul(b"/usr/include".to_vec()));
+                }
+
+                if dir_exists(b"/usr/lib/loongarch64-linux-gnu") {
+                    let _ = CACHED_DEFAULT_SYSTEM_LIBRARY_DIR.set(
+                        bun_core::ZBox::from_vec_with_nul(
+                            b"/usr/lib/loongarch64-linux-gnu".to_vec(),
+                        ),
+                    );
+                } else if dir_exists(b"/usr/lib64") {
+                    let _ = CACHED_DEFAULT_SYSTEM_LIBRARY_DIR
+                        .set(bun_core::ZBox::from_vec_with_nul(b"/usr/lib64".to_vec()));
+                }
+            }
         }
     }
 
@@ -2688,8 +2711,17 @@ impl CompilerRT {
         }
     }
 
+    #[inline(never)]
+    extern "C" fn memmove(dest: *mut u8, source: *const u8, byte_count: usize) {
+        // SAFETY: caller (TCC-compiled code) guarantees both ranges are valid;
+        // ptr::copy preserves memmove semantics for overlapping regions.
+        unsafe {
+            std::ptr::copy(source, dest, byte_count);
+        }
+    }
+
     pub fn define(state: &mut TCC::State) {
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(any(target_arch = "x86_64", target_arch = "loongarch64"))]
         {
             state.define_symbol(zstr!("NEEDS_COMPILER_RT_FUNCTIONS"), zstr!("1"));
             // SAFETY: `libtcc1.c` is embedded with a manual trailing NUL guaranteed
@@ -2702,7 +2734,6 @@ impl CompilerRT {
                 }
             }
         }
-
         // TODO(port): @import("../../jsc/sizes.zig") → bun_jsc::sizes
         let offsets = Offsets::get();
         // TODO(port): TCC::State::define_symbols_comptime API — Zig used struct literal with int values
@@ -2740,6 +2771,9 @@ impl CompilerRT {
             .expect("unreachable");
         state
             .add_symbol(zstr!("memcpy"), Self::memcpy as *const c_void)
+            .expect("unreachable");
+        state
+            .add_symbol(zstr!("memmove"), Self::memmove as *const c_void)
             .expect("unreachable");
         // Re-declare the C++ NapiHandleScope hooks locally — the canonical
         // declarations live in `crate::napi::napi_body` which is private, and
