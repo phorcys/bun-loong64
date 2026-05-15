@@ -4,6 +4,8 @@
  * From https://github.com/oven-sh/WebKit releases.
  */
 export const WEBKIT_VERSION = "5488984d20e0dbfe4be2c3ba8fb18eb81a5e0e8b";
+const LOONGARCH64_WEBKIT_PREBUILT_TAG =
+  "webkit-loong64jit-prebuilt-5488984d20e0-loong64-203bcf06c867-mcmodel-medium";
 
 /**
  * WebKit (JavaScriptCore) — the JS engine.
@@ -70,6 +72,10 @@ function prebuiltSuffix(cfg: Config): string {
 }
 
 function prebuiltUrl(cfg: Config): string {
+  if (cfg.linux && cfg.loongarch64 && !cfg.debug && !cfg.lto && !cfg.asan) {
+    return `https://github.com/phorcys/WebKit-loong64-bun/releases/download/${LOONGARCH64_WEBKIT_PREBUILT_TAG}/bun-webkit-linux-loongarch64.tar.zst`;
+  }
+
   const os = cfg.windows ? "windows" : cfg.darwin ? "macos" : cfg.freebsd ? "freebsd" : "linux";
   const arch = cfg.loongarch64 ? "loongarch64" : cfg.arm64 ? "arm64" : "amd64";
   const name = `bun-webkit-${os}-${arch}${prebuiltSuffix(cfg)}`;
@@ -83,7 +89,10 @@ function prebuiltUrl(cfg: Config): string {
  * doesn't reuse a wrong-ABI extraction.
  */
 function prebuiltDestDir(cfg: Config): string {
-  const version16 = cfg.webkitVersion.slice(0, 16);
+  const version16 =
+    cfg.linux && cfg.loongarch64 && !cfg.debug && !cfg.lto && !cfg.asan
+      ? LOONGARCH64_WEBKIT_PREBUILT_TAG
+      : cfg.webkitVersion.slice(0, 16);
   // Cross-compiled targets share a host (and cache dir) with native builds,
   // so include os+arch in the key — otherwise a FreeBSD/arm64 extraction
   // collides with a Linux/x64 one at the same WebKit version.
@@ -123,6 +132,7 @@ function prebuiltIcuLibs(cfg: Config): string[] {
     return [`lib/sicudt${d}.lib`, `lib/sicuin${d}.lib`, `lib/sicuuc${d}.lib`];
   }
   if (cfg.linux || cfg.freebsd) {
+    if (cfg.loongarch64) return [];
     return ["lib/libicudata.a", "lib/libicui18n.a", "lib/libicuuc.a"];
   }
   return []; // darwin: system ICU
@@ -154,6 +164,13 @@ function localIcuLibs(cfg: Config): string[] {
 
 function loongarch64IcuRoot(cfg: Config): string {
   return process.env.BUN_LOONGARCH64_ICU_ROOT ?? resolve(cfg.cwd, "build", "icu-loongarch64-gnu", "install");
+}
+
+function prebuiltIdentity(cfg: Config): string {
+  if (cfg.linux && cfg.loongarch64 && !cfg.debug && !cfg.lto && !cfg.asan) {
+    return LOONGARCH64_WEBKIT_PREBUILT_TAG;
+  }
+  return `${cfg.webkitVersion}${prebuiltSuffix(cfg)}`;
 }
 
 function loongarch64IcuLibs(cfg: Config): string[] {
@@ -195,7 +212,7 @@ export const webkit: Dependency = {
         // Identity = version + suffix. Suffix ensures profile switches
         // (debug ↔ release, asan toggle) trigger re-download. Without it,
         // same version stamp would skip, leaving the wrong ABI on disk.
-        identity: `${cfg.webkitVersion}${prebuiltSuffix(cfg)}`,
+        identity: prebuiltIdentity(cfg),
         destDir: prebuiltDestDir(cfg),
       };
       // macOS: bundled ICU headers conflict with system ICU.
@@ -246,6 +263,10 @@ export const webkit: Dependency = {
     // RW-segment vtables that would otherwise be shared RO). Android stays
     // PIC because bionic mandates PIE.
     if (cfg.unix && cfg.abi !== "android") optFlags.push("-fno-pic", "-fno-pie");
+    // LoongArch64 code and jump tables can exceed the small code model once
+    // JSC is built into large static archives. Keep WebKit on the same medium
+    // code model as the prebuilt LoongArch64 artifacts.
+    if (cfg.loongarch64) optFlags.push("-mcmodel=medium");
     if (cfg.lto) optFlags.push("-flto=full");
     if (cfg.pgoGenerate) optFlags.push(`-fprofile-generate=${cfg.pgoGenerate}`);
     if (cfg.pgoUse) {
@@ -273,7 +294,7 @@ export const webkit: Dependency = {
     if (cfg.linux && cfg.crossTarget !== undefined && cfg.abi === "gnu") {
       optFlags.push(`--target=${cfg.crossTarget}`);
     }
-    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu" && cfg.crossTarget !== undefined) {
       optFlags.push("-isystem", join(loongarch64IcuRoot(cfg), "include"));
     }
     const optFlagStr = optFlags.join(" ");
@@ -329,7 +350,7 @@ export const webkit: Dependency = {
         ? {
             CMAKE_SYSTEM_NAME: "Linux",
             CMAKE_SYSTEM_PROCESSOR: cfg.loongarch64 ? "loongarch64" : cfg.arm64 ? "aarch64" : "x86_64",
-            ...(cfg.loongarch64
+            ...(cfg.loongarch64 && cfg.crossTarget !== undefined
               ? {
                   ICU_ROOT: loongarch64IcuRoot(cfg),
                   ICU_INCLUDE_DIR: join(loongarch64IcuRoot(cfg), "include"),
@@ -367,7 +388,7 @@ export const webkit: Dependency = {
 
     const spec: NestedCmakeBuild = {
       kind: "nested-cmake",
-      targets: ["jsc"],
+      targets: cfg.loongarch64 ? ["WTF", "JavaScriptCore", "bmalloc"] : ["jsc"],
       args,
       // Release local WebKit keeps debug info so JSC crashes symbolicate.
       // LTO stays plain Release (debug info + LTO bloats significantly).
@@ -455,7 +476,7 @@ export const webkit: Dependency = {
         resolve(icuRoot, "lib", "libicudata.a"),
       );
     }
-    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu" && cfg.crossTarget !== undefined) {
       libs.push(...loongarch64IcuLibs(cfg));
     }
 
@@ -476,7 +497,7 @@ export const webkit: Dependency = {
     if (cfg.abi === "android") {
       includes.push(resolve(process.env.BUN_ANDROID_ICU_ROOT ?? "/tmp/icu-android", "include"));
     }
-    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu") {
+    if (cfg.linux && cfg.loongarch64 && cfg.abi === "gnu" && cfg.crossTarget !== undefined) {
       includes.push(resolve(loongarch64IcuRoot(cfg), "include"));
     }
 

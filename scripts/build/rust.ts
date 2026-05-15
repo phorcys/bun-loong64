@@ -37,7 +37,8 @@ import { streamPath } from "./stream.ts";
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * Rust target triple. Arch is `x86_64`/`aarch64`, not `x64`/`arm64`.
+ * Rust target triple. Arch is `x86_64`/`aarch64`/`loongarch64`,
+ * not `x64`/`arm64`/`loong64`.
  *
  * Passed explicitly via `--target` for two reasons:
  *   - `-Z sanitizer=address` requires it (rustc refuses on the implicit
@@ -45,7 +46,7 @@ import { streamPath } from "./stream.ts";
  *   - Cross-compiles (Android/FreeBSD) need it anyway
  */
 export function rustTarget(cfg: Config): string {
-  const arch = cfg.x64 ? "x86_64" : "aarch64";
+  const arch = cfg.loongarch64 ? "loongarch64" : cfg.x64 ? "x86_64" : "aarch64";
   if (cfg.darwin) return `${arch}-apple-darwin`;
   if (cfg.windows) return `${arch}-pc-windows-msvc`;
   if (cfg.freebsd) return `${arch}-unknown-freebsd`;
@@ -106,6 +107,7 @@ export function rustCanCrossFromLinux(cfg: Config): boolean {
 export const allRustTargets = [
   "x86_64-unknown-linux-gnu",
   "aarch64-unknown-linux-gnu",
+  "loongarch64-unknown-linux-gnu",
   "x86_64-unknown-linux-musl",
   "aarch64-unknown-linux-musl",
   "x86_64-apple-darwin",
@@ -407,6 +409,8 @@ export function emitRust(n: Ninja, cfg: Config, inputs: RustBuildInputs): string
     ? cfg.baseline
       ? "nehalem"
       : "haswell"
+    : cfg.loongarch64
+      ? "loongarch64"
     : cfg.darwin
       ? "apple-m1"
       : // armv8-a+crc isn't a CPU name — closest LLVM model with CRC baseline:

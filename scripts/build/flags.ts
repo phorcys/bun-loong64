@@ -882,12 +882,6 @@ export const linkerFlags: Flag[] = [
       "pthread_rwlock_unlock",
       "pthread_rwlock_wrlock",
       "pthread_setspecific",
-      // stat-family inline → real symbol (2.33)
-      "fstat",
-      "fstat64",
-      "fstatat",
-      "fstatat64",
-      "mknod",
       // syscall wrappers (2.27/2.28)
       "copy_file_range",
       "memfd_create",
@@ -897,7 +891,19 @@ export const linkerFlags: Flag[] = [
       "posix_spawn_file_actions_addchdir_np",
     ].map(s => `-Wl,--wrap=${s}`),
     when: c => c.linux && c.abi === "gnu",
-    desc: "Wrap glibc 2.18+ symbols (portable down to glibc 2.17)",
+    desc: "Wrap glibc 2.18+ symbols (portable down to glibc 2.17 where ABI exists)",
+  },
+  {
+    flag: [
+      // stat-family inline → real symbol (2.33)
+      "fstat",
+      "fstat64",
+      "fstatat",
+      "fstatat64",
+      "mknod",
+    ].map(s => `-Wl,--wrap=${s}`),
+    when: c => c.linux && c.abi === "gnu" && !c.loongarch64,
+    desc: "Wrap stat-family glibc compat symbols (not present on loong64 glibc 2.36 baseline)",
   },
   {
     flag: ["-static-libstdc++", "-static-libgcc"],
@@ -987,8 +993,8 @@ export const linkerFlags: Flag[] = [
   },
   {
     flag: "-Wl,--gc-sections",
-    when: c => c.linux && c.release,
-    desc: "Garbage-collect unused sections (release only; debug keeps Zig dbHelper symbols)",
+    when: c => c.linux && c.release && !c.loongarch64,
+    desc: "Garbage-collect unused sections (release only; debug keeps Zig dbHelper symbols; loong64 ICU EH tables require keeping sections)",
   },
   {
     // Always icf=safe in release. The stripped `bun` shares its build-id
@@ -996,7 +1002,7 @@ export const linkerFlags: Flag[] = [
     // symbolication" would also bloat the shipped binary's .text — and
     // `perf` symbolicates folded functions fine via the linker-map anyway.
     flag: c => ["-Wl,-icf=safe", `-Wl,-Map=${c.buildDir}/${bunExeName(c)}.linker-map`],
-    when: c => c.linux && c.release && !c.asan && !c.valgrind,
+    when: c => c.linux && c.release && !c.asan && !c.valgrind && !c.loongarch64,
     desc: "Identical-code-folding (safe; perf symbolication uses the linker-map)",
   },
   {

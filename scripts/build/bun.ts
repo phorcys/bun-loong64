@@ -73,10 +73,16 @@ function systemLibs(cfg: Config): string[] {
         libs.push("-latomic");
       }
     }
-    // Linux local WebKit: link system ICU (prebuilt bundles its own).
+    // Linux local WebKit: link system ICU. LoongArch64 prebuilts also use
+    // system ICU because distro static ICU archives have broken EH/COMDAT
+    // section interactions with lld on this target.
     // Assumes system ICU is in default lib paths — true on most distros.
     // Android: no system ICU; the local WebKit build must bundle it.
-    if (cfg.webkit === "local" && cfg.abi !== "android" && !(cfg.linux && cfg.loongarch64)) {
+    if (
+      (cfg.webkit === "local" || (cfg.linux && cfg.loongarch64 && cfg.webkit === "prebuilt")) &&
+      cfg.abi !== "android" &&
+      !(cfg.linux && cfg.loongarch64 && cfg.crossTarget !== undefined)
+    ) {
       libs.push("-licudata", "-licui18n", "-licuuc");
     }
   }
@@ -664,7 +670,7 @@ function emitSmokeTest(n: Ninja, cfg: Config, exe: string, exeName: string): voi
   const envWrap = "env BUN_DEBUG_QUIET_LOGS=1";
   let testCmd: string;
   if (cfg.linux && cfg.asan) {
-    const arch = cfg.x64 ? "x86_64" : "aarch64";
+    const arch = cfg.loongarch64 ? "loongarch64" : cfg.x64 ? "x86_64" : "aarch64";
     testCmd = `${envWrap} setarch ${arch} -R ${exe} --revision || ${envWrap} ${exe} --revision`;
   } else if (cfg.windows) {
     // Windows: no setarch, no env wrapper syntax differences matter for
