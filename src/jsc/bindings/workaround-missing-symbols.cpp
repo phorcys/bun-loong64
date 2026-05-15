@@ -100,6 +100,9 @@ std::atomic<int> wtfStringCopyCount;
 #elif defined(__aarch64__)
 #define BUN_GLIBC_BASE "GLIBC_2.17"
 #define BUN_GLIBC_2_4 "GLIBC_2.17"
+#elif defined(__loongarch64)
+#define BUN_GLIBC_BASE "GLIBC_2.36"
+#define BUN_GLIBC_2_4 "GLIBC_2.36"
 #endif
 
 #define BUN_SYMVER(sym, ver) __asm__(".symver " #sym "," #sym "@" ver)
@@ -416,6 +419,7 @@ extern "C" int __wrap___pthread_key_create(pthread_key_t* k, void (*d)(void*)) {
 
 // Group B: stat family became real symbols in 2.33. Before that they were
 // header inlines around __fxstat*/__xmknod, which still exist at ≤ 2.17.
+#if defined(__x86_64__) || defined(__aarch64__)
 extern "C" int __fxstat(int, int, struct stat*);
 extern "C" int __fxstat64(int, int, struct stat64*);
 extern "C" int __fxstatat(int, int, const char*, struct stat*, int);
@@ -436,6 +440,7 @@ extern "C" int __wrap_fstat64(int fd, struct stat64* st) { return __fxstat64(_ST
 extern "C" int __wrap_fstatat(int dfd, const char* p, struct stat* st, int f) { return __fxstatat(_STAT_VER, dfd, p, st, f); }
 extern "C" int __wrap_fstatat64(int dfd, const char* p, struct stat64* st, int f) { return __fxstatat64(_STAT_VER, dfd, p, st, f); }
 extern "C" int __wrap_mknod(const char* p, mode_t m, dev_t d) { return __xmknod(_MKNOD_VER, p, m, &d); }
+#endif
 
 // Group C: thin syscall wrappers added in 2.27/2.28. Kernel has had the
 // syscalls since 4.5 (copy_file_range), 3.17 (memfd_create), 4.11 (statx);

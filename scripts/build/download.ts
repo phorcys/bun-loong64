@@ -241,6 +241,35 @@ export async function extractTarGz(tarball: string, dest: string, stripComponent
 }
 
 /**
+ * Extract a .tar.zst archive with mtime normalization.
+ *
+ * Same semantics as extractTarGz(), but uses tar's zstd decompressor. This is
+ * used by LoongArch64 WebKit prebuilts, which are published as .tar.zst.
+ */
+export async function extractTarZst(tarball: string, dest: string, stripComponents = 1): Promise<void> {
+  const args = ["--zstd", "-xmf", tarball, "-C", dest];
+  if (stripComponents > 0) args.push(`--strip-components=${stripComponents}`);
+
+  const result = spawnSync(tarExe, args, {
+    stdio: ["ignore", "ignore", "pipe"],
+    encoding: "utf8",
+  });
+
+  if (result.error) {
+    throw new BuildError(`Failed to spawn tar`, {
+      hint: "Is `tar` in your PATH? GNU tar/bsdtar with zstd support is required for .tar.zst archives",
+      cause: result.error,
+    });
+  }
+  if (result.status !== 0) {
+    throw new BuildError(`tar.zst extraction failed (exit ${result.status}): ${result.stderr}`, { file: tarball });
+  }
+
+  const entries = await readdir(dest);
+  assert(entries.length > 0, `tar extracted nothing from ${tarball}`, { hint: "Tarball may be corrupt" });
+}
+
+/**
  * Extract a .zip archive with mtime normalization.
  *
  * Tries `unzip` first (most systems), falls back to `tar` (bsdtar — what
@@ -322,7 +351,8 @@ export async function fetchPrebuilt(
   // ─── Download ───
   const destParent = resolve(dest, "..");
   await mkdir(destParent, { recursive: true });
-  const tarballPath = `${dest}${suffix}.tar.gz`;
+  const zstd = url.endsWith(".tar.zst") || url.endsWith(".tzst");
+  const tarballPath = `${dest}${suffix}${zstd ? ".tar.zst" : ".tar.gz"}`;
   await downloadWithRetry(url, tarballPath, name);
 
   // ─── Extract ───
@@ -334,7 +364,11 @@ export async function fetchPrebuilt(
 
   try {
     // stripComponents=0: keep top-level dir for hoisting.
-    await extractTarGz(tarballPath, stagingDir, 0);
+    if (zstd) {
+      await extractTarZst(tarballPath, stagingDir, 0);
+    } else {
+      await extractTarGz(tarballPath, stagingDir, 0);
+    }
     await rm(tarballPath, { force: true });
 
     // Hoist: if single top-level dir, promote its contents to dest.

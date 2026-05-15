@@ -500,8 +500,12 @@ export function detectHost(): Host {
       ? "x64"
       : a === "arm64"
         ? "aarch64"
+        : a === "loong64"
+          ? "loongarch64"
         : (() => {
-            throw new BuildError(`Unsupported host architecture: ${a}`, { hint: "Bun builds on x64 or arm64" });
+            throw new BuildError(`Unsupported host architecture: ${a}`, {
+              hint: "Bun builds on x64, arm64, or loong64",
+            });
           })();
 
   // rustTriple is stamped later from Toolchain.rustHostTriple in resolveConfig
