@@ -1434,7 +1434,7 @@ static int ssl_dispatch_parked_reason(struct us_socket_t *s) {
   loop_ssl_data->ssl_last_fatal_error_owner = NULL;
   struct us_bun_verify_error_t verify_error = {
       .error = -71, .code = "EPROTO", .reason = reason};
-  us_dispatch_handshake(s, 0, verify_error);
+  us_dispatch_handshake(s, 0, &verify_error);
   return 1;
 }
 

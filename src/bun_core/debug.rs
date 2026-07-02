@@ -262,6 +262,7 @@ impl StackIterator {
     }
 }
 
+#[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 pub(crate) const PC_OFFSET: usize = StackIterator::PC_OFFSET;
 
 /// Capture the current thread's call stack.

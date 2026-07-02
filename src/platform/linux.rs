@@ -71,7 +71,28 @@ unsafe fn raw_syscall6(
         }
         return ret;
     }
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    #[cfg(target_arch = "loongarch64")]
+    {
+        let ret: isize;
+        // SAFETY: Linux LoongArch syscall ABI. Syscall number in a7, args in
+        // a0..a5, return in a0. Memory clobber because the kernel may
+        // read/write through the pointer arguments.
+        unsafe {
+            core::arch::asm!(
+                "syscall 0",
+                in("$r11") nr,
+                inlateout("$r4") a1 as isize => ret,
+                in("$r5") a2,
+                in("$r6") a3,
+                in("$r7") a4,
+                in("$r8") a5,
+                in("$r9") a6,
+                options(nostack),
+            );
+        }
+        return ret;
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64", target_arch = "loongarch64")))]
     compile_error!("raw_syscall6: unsupported architecture");
 }
 
