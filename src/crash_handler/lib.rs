@@ -2518,8 +2518,13 @@ mod draft {
                 let _ = name_bytes;
                 let address = addr.saturating_sub(1);
                 let m = bun_sys::elf::find_loaded_module(address)?;
+                let image_relative_address = address - m.base_address;
+                if image_relative_address > i32::MAX as usize {
+                    return None;
+                }
+
                 return Some(StackLine {
-                    address: i32::try_from(address - m.base_address).expect("int cast"),
+                    address: i32::try_from(image_relative_address).expect("int cast"),
                     object: None,
                 });
             }

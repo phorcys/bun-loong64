@@ -262,12 +262,33 @@ pub mod reader {
         if arguments.is_empty() || !arguments[0].is_number() {
             return Err(global_object.throw_invalid_arguments(format_args!("Expected a pointer")));
         }
-        let off = if arguments.len() > 1 {
-            usize::try_from(arguments[1].to_int32()).expect("int cast")
+        let addr = arguments[0].as_ptr_address();
+        if arguments.len() > 1 {
+            let offset = arguments[1].to_int64();
+            let offset = if offset < 0 {
+                match offset
+                    .checked_neg()
+                    .and_then(|offset| usize::try_from(offset).ok())
+                {
+                    Some(offset) => return Ok(addr.saturating_sub(offset)),
+                    None => {
+                        return Err(global_object
+                            .throw_invalid_arguments(format_args!("byteOffset out of range")));
+                    }
+                }
+            } else {
+                match usize::try_from(offset) {
+                    Ok(offset) => offset,
+                    Err(_) => {
+                        return Err(global_object
+                            .throw_invalid_arguments(format_args!("byteOffset out of range")));
+                    }
+                }
+            };
+            Ok(addr.saturating_add(offset))
         } else {
-            0usize
-        };
-        Ok(arguments[0].as_ptr_address() + off)
+            Ok(addr)
+        }
     }
 
     /// Read a `T` from a user-supplied raw address (unaligned).
@@ -452,9 +473,20 @@ fn ptr_(global_this: &JSGlobalObject, value: JSValue, byte_offset: Option<JSValu
 
         let bytei64 = off.to_int64();
         if bytei64 < 0 {
-            addr = addr.saturating_sub(usize::try_from(-bytei64).expect("int cast"));
+            if let Some(off_u) = bytei64
+                .checked_neg()
+                .and_then(|offset| usize::try_from(offset).ok())
+            {
+                addr = addr.saturating_sub(off_u);
+            } else {
+                return global_this.to_invalid_arguments(format_args!("byteOffset out of range"));
+            }
         } else {
-            addr += usize::try_from(bytei64).expect("int cast");
+            if let Ok(off_u) = usize::try_from(bytei64) {
+                addr = addr.saturating_add(off_u);
+            } else {
+                return global_this.to_invalid_arguments(format_args!("byteOffset out of range"));
+            }
         }
 
         if addr > array_buffer.ptr as usize + array_buffer.byte_len as usize {
@@ -524,9 +556,24 @@ fn get_ptr_slice(
         if byte_off.is_number() {
             let off = byte_off.to_int64();
             if off < 0 {
-                addr = addr.saturating_sub(usize::try_from(-off).expect("int cast"));
+                if let Some(off_u) = off
+                    .checked_neg()
+                    .and_then(|offset| usize::try_from(offset).ok())
+                {
+                    addr = addr.saturating_sub(off_u);
+                } else {
+                    return ValueOrError::Err(
+                        global_this.to_invalid_arguments(format_args!("byteOffset out of range")),
+                    );
+                }
             } else {
-                addr = addr.saturating_add(usize::try_from(off).expect("int cast"));
+                if let Ok(off_u) = usize::try_from(off) {
+                    addr = addr.saturating_add(off_u);
+                } else {
+                    return ValueOrError::Err(
+                        global_this.to_invalid_arguments(format_args!("byteOffset out of range")),
+                    );
+                }
             }
 
             if addr == 0 {
@@ -576,13 +623,20 @@ fn get_ptr_slice(
                 )));
             }
 
-            if length_i > i64::try_from(MAX_ADDRESSABLE_MEMORY).expect("int cast") {
+            if length_i > i64::try_from(MAX_ADDRESSABLE_MEMORY).unwrap_or(i64::MAX) {
                 return ValueOrError::Err(global_this.to_invalid_arguments(format_args!(
                     "length exceeds max addressable memory. This usually means a bug in your code."
                 )));
             }
 
-            let length = usize::try_from(length_i).expect("int cast");
+            let length = match usize::try_from(length_i) {
+                Ok(l) => l,
+                Err(_) => {
+                    return ValueOrError::Err(
+                        global_this.to_invalid_arguments(format_args!("length out of range")),
+                    );
+                }
+            };
             return ValueOrError::Slice(addr as *mut u8, length);
         }
     }
@@ -624,6 +678,11 @@ pub(crate) fn to_array_buffer(
     match get_ptr_slice(global_this, value, byte_offset, value_length) {
         ValueOrError::Err(erro) => Ok(erro),
         ValueOrError::Slice(ptr, len) => {
+            if len > u32::MAX as usize {
+                return Ok(global_this
+                    .to_invalid_arguments(format_args!("length exceeds max ArrayBuffer size")));
+            }
+
             let mut callback: jsc::c::JSTypedArrayBytesDeallocator = None;
             let mut ctx: Option<*mut c_void> = None;
             if let Some(callback_value) = finalization_callback {
@@ -685,6 +744,11 @@ pub(crate) fn to_buffer(
     match get_ptr_slice(global_this, value, byte_offset, value_length) {
         ValueOrError::Err(err) => Ok(err),
         ValueOrError::Slice(ptr, len) => {
+            if len > u32::MAX as usize {
+                return Ok(global_this
+                    .to_invalid_arguments(format_args!("length exceeds max ArrayBuffer size")));
+            }
+
             let mut callback: jsc::c::JSTypedArrayBytesDeallocator = None;
             let mut ctx: Option<*mut c_void> = None;
             if let Some(callback_value) = finalization_callback {

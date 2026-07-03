@@ -7,6 +7,124 @@ import path from "path";
 // TinyCC (and all of bun:ffi) is disabled on Windows ARM64
 const isFFIUnavailable = isWindows && isArm64;
 
+describe.skipIf(isFFIUnavailable)("FFI read helpers", () => {
+  it("support negative byte offsets without panicking", async () => {
+    using dir = tempDir("bun-ffi-read-negative-offset", {
+      "fixture.js": /* js */ `
+        import { ptr, read } from "bun:ffi";
+
+        const bytes = new Uint8Array([10, 20, 30, 40]);
+        const pointer = ptr(bytes.subarray(2));
+        console.log(read.u8(pointer, -1));
+      `,
+    });
+
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "fixture.js"],
+      env: bunEnv,
+      cwd: String(dir),
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    expect(normalizeBunSnapshot(stdout, dir)).toMatchInlineSnapshot(`"20"`);
+    expect(stderr).toBe("");
+    expect(exitCode).toBe(0);
+  });
+
+  it("rejects oversized toArrayBuffer lengths without panicking", async () => {
+    using dir = tempDir("bun-ffi-to-array-buffer-oversized-length", {
+      "fixture.js": /* js */ `
+        import { toArrayBuffer } from "bun:ffi";
+
+        const result = toArrayBuffer(3, 0, 2 ** 48);
+        console.log(result instanceof TypeError, result.message);
+      `,
+    });
+
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "fixture.js"],
+      env: bunEnv,
+      cwd: String(dir),
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    expect(normalizeBunSnapshot(stdout, dir)).toMatchInlineSnapshot(`"true length exceeds max ArrayBuffer size"`);
+    expect(stderr).toBe("");
+    expect(exitCode).toBe(0);
+  });
+});
+
+describe.skipIf(isFFIUnavailable)("JSCallback ABI", () => {
+  it("passes mixed ptr/u32/ptr/u64 callback arguments in order", async () => {
+    using dir = tempDir("bun-ffi-callback-mixed-args", {
+      "callback.c": /* c */ `
+        #include <stdint.h>
+
+        typedef void (*callback_t)(void*, uint32_t, void*, uint64_t);
+
+        void call_callback(callback_t callback, void* stream, uint32_t event_id, void* data, uint64_t len) {
+          callback(stream, event_id, data, len);
+        }
+      `,
+      "fixture.js": /* js */ `
+        import { cc, JSCallback, ptr } from "bun:ffi";
+        import path from "path";
+
+        const streamBytes = new Uint8Array([1]);
+        const dataBytes = new Uint8Array([2]);
+        const stream = ptr(streamBytes);
+        const data = ptr(dataBytes);
+
+        const { symbols } = cc({
+          source: path.join(import.meta.dir, "callback.c"),
+          symbols: {
+            call_callback: { args: ["ptr", "ptr", "u32", "ptr", "u64"], returns: "void" },
+          },
+        });
+
+        let seen;
+        const callback = new JSCallback((streamArg, eventId, dataArg, len) => {
+          seen = [streamArg, eventId, dataArg, len];
+        }, { args: ["ptr", "u32", "ptr", "u64"], returns: "void" });
+
+        symbols.call_callback(callback.ptr, stream, 8, data, 16n);
+        callback.close();
+
+        console.log(JSON.stringify({
+          stream: seen[0] === stream,
+          eventId: seen[1],
+          data: seen[2] === data,
+          len: String(seen[3]),
+        }));
+      `,
+    });
+
+    await using proc = Bun.spawn({
+      cmd: [bunExe(), "fixture.js"],
+      env: bunEnv,
+      cwd: String(dir),
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([proc.stdout.text(), proc.stderr.text(), proc.exited]);
+
+    const results = stdout.startsWith("{") ? JSON.parse(stdout) : stdout;
+    expect({ results, stderr, exitCode }).toMatchObject({
+      results: {
+        stream: true,
+        eventId: 8,
+        data: true,
+        len: "16",
+      },
+      exitCode: 0,
+    });
+  });
+});
+
 // TODO: we need to install build-essential and Apple SDK in CI.
 // It can't find includes. It can on machines with that enabled.
 // TinyCC's setjmp/longjmp error handling conflicts with ASan.
