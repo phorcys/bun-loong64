@@ -9,7 +9,7 @@
 // compressed (lazily decompressed via bun_icu_decompress.cpp).
 export const WEBKIT_VERSION = "c9ad5813fd23bd8b98b0738abc3d037ec716aa92";
 const LOONGARCH64_WEBKIT_PREBUILT_TAG =
-  "webkit-loong64jit-prebuilt-c9ad5813fd23-loong64-563a3c9024c2-mcmodel-medium";
+  "webkit-loong64jit-prebuilt-c9ad5813fd23-loong64-563a3c9024c2-la64v1.0-mcmodel-medium";
 
 /**
  * WebKit (JavaScriptCore) — the JS engine.
