@@ -73,6 +73,13 @@ export const cpuTargetFlags: Flag[] = [
     desc: "LoongArch64 v1.1: enables modern atomics and LSX baseline expected by the JSC port",
   },
   {
+    // HWY_LASX is bit 40 (1LL << 40); a bare number avoids ninja's /bin/sh
+    // choking on the "(HWY_LASX)" parenthesized form.
+    flag: "-DHWY_DISABLED_TARGETS=1099511627776",
+    when: c => c.loongarch64,
+    desc: "loong64 clean la64v1.0: exclude Highway's LASX (256-bit) target so the binary has no lasx instructions",
+  },
+  {
     flag: "-march=nehalem",
     when: c => c.x64 && c.baseline,
     desc: "x64 baseline: Nehalem (2008) — no AVX, broadest compatibility",
