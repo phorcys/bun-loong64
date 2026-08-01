@@ -68,9 +68,9 @@ export const cpuTargetFlags: Flag[] = [
     desc: "ARM64 Windows: clang-cl prefix required (/clang: passes to clang)",
   },
   {
-    flag: "-march=la64v1.1",
+    flag: "-march=la64v1.0",
     when: c => c.loongarch64,
-    desc: "LoongArch64 v1.1: enables modern atomics and LSX baseline expected by the JSC port",
+    desc: "LoongArch64 v1.0: LA364-class cores (e.g. Loongson-3B6000M) do not implement the v1.1 AM* .b/.h atomics; v1.0 keeps LSX baseline without them",
   },
   {
     // HWY_LASX is bit 40 (1LL << 40); a bare number avoids ninja's /bin/sh
